@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.23)  25 OCT 2026 11:50
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.23)  25 OCT 2026 17:54
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1449,46 +1449,6 @@ Overfull \hbox (30.79095pt too wide) in paragraph at lines 770--770
  []
 
 
-Overfull \hbox (16.78049pt too wide) detected at line 777
-[][]\T1/cmtt/m/it/10 # --- 1. Polígonos de barrio -------------------------------------------------[] 
- []
-
-
-Overfull \hbox (6.28305pt too wide) detected at line 778
-[][]\T1/cmtt/m/it/10 # Cruce por código de distrito + código de barrio (codbarrio se repite entre[] 
- []
-
-
-Overfull \hbox (32.52664pt too wide) detected at line 790
-[][]\T1/cmtt/m/n/10 st_geometry[](resultado) []<-[] []"geom_barrio"[]   []\T1/cmtt/m/it/10 # nombre claro para la geometría activa[] 
- []
-
-
-Overfull \hbox (27.27792pt too wide) detected at line 797
-[]  []\T1/cmtt/m/n/10 summarise[]([]nombre_distrito =[] []first[](nombre), [].groups =[] []"drop"[])  []\T1/cmtt/m/it/10 # une las piezas[] 
- []
-
-
-Overfull \hbox (90.26254pt too wide) detected at line 801
-[]\T1/cmtt/m/n/10 resultado[]$[]geom_distrito   []<-[] []st_geometry[](distritos_unidos)[fila]   []\T1/cmtt/m/it/10 # 2\TS1/cmtt/m/it/10 ª \T1/cmtt/m/it/10 columna de geometría[] 
- []
-
-
-Overfull \hbox (11.53177pt too wide) detected at line 803
-[][]\T1/cmtt/m/it/10 # --- 3. Densidad del distrito (población total / superficie total) ---------[] 
- []
-
-
-Overfull \hbox (16.78049pt too wide) detected at line 812
-[][]\T1/cmtt/m/it/10 # --- Comprobaciones ---------------------------------------------------------[] 
- []
-
-
-Overfull \hbox (62.28326pt too wide) detected at line 813
-[][]\T1/cmtt/m/n/10 cat[]([]"Barrios sin polígono de barrio:  "[], []sum[]([]st_is_empty[](resultado[]$[]geom_barrio)), []"[][]\n[][]"[]) 
- []
-
-
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 16.18796pt, for example:
 (fancyhdr)                \setlength{\headheight}{16.18796pt}.
@@ -1496,23 +1456,25 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
 
 [9]
-Overfull \hbox (25.54224pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ## Bounding box:  xmin: -0.432535 ymin: 39.27893 xmax: -0.2753685 ymax: 39.56659[] 
+Overfull \hbox (106.0087pt too wide) detected at line 785
+[][]\T1/cmtt/m/it/10 #unimos los poligonos al df de pobs, identificando el nombre de variables con el argumento by()[] 
  []
 
 
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ##    distrito barrio nombre_distrito nombre_barrio    personas superficie_ha[] 
+Overfull \hbox (336.9523pt too wide) detected at line 789
+[]  []\T1/cmtt/m/n/10 st_as_sf[]() []\T1/cmtt/m/it/10 # sf == Simple Features es para que, por defecto, siempre arrastre la variable geometry (volverlo un objeto espacial, digamos)[] 
+ []
+
+LaTeX Font Info:    Font shape `T1/cmtt/bx/it' in size <10> not available
+(Font)              Font shape `T1/cmtt/m/it' tried instead on input line 794.
+
+Overfull \hbox (27.27792pt too wide) detected at line 800
+[]  []\T1/cmtt/m/n/10 summarise[]([]nombre_distrito =[] []first[](nombre), [].groups =[] []"drop"[])  []\T1/cmtt/m/it/10 # une las piezas[] 
  []
 
 
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ##       <int>  <int> <chr>           <chr>               <dbl>         <dbl>[] 
- []
-
-
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ##  1        1      1 CIUTAT VELLA    la Seu               3275          22.1[] 
+Overfull \hbox (58.77023pt too wide) detected at line 804
+[]\T1/cmtt/m/n/10 pob[]$[]geom_distrito   []<-[] []st_geometry[](distritos_unidos)[fila]   []\T1/cmtt/m/it/10 # 2\TS1/cmtt/m/it/10 ª \T1/cmtt/m/it/10 columna de geometría[] 
  []
 
 
@@ -1523,77 +1485,10 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
 
 [10]
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ##  2        1      2 CIUTAT VELLA    la Xerea             4277          31.2[] 
- []
-
-
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ##  3        1      3 CIUTAT VELLA    el Carme             7252          38.4[] 
- []
-
-
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ##  4        1      4 CIUTAT VELLA    el Pilar             5472          16.2[] 
- []
-
-
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ##  5        1      5 CIUTAT VELLA    el Mercat            4101          17.3[] 
- []
-
-
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ##  6        1      6 CIUTAT VELLA    Sant Francesc        6133          43.9[] 
- []
-
-
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ##  7        2      1 L'EIXAMPLE      Russafa             25514          87.8[] 
- []
-
-
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ##  8        2      2 L'EIXAMPLE      el Pla del Remei     7344          38.7[] 
- []
-
-
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ##  9        2      3 L'EIXAMPLE      la Gran Via         12378          46.9[] 
- []
-
-
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 861--861
-[]\T1/cmtt/m/n/10 ## 10        3      1 EXTRAMURS       el Botànic           7033          37.0[] 
- []
-
-
-Overfull \hbox (16.78049pt too wide) detected at line 865
-[][]\T1/cmtt/m/it/10 # --- Mapa de comprobación: barrios coloreados, límites de distrito encima ---[] 
- []
-
-<ProyectoAED_files/figure-latex/unnamed-chunk-9-1.pdf, id=306, 469.755pt x 325.215pt>
-File: ProyectoAED_files/figure-latex/unnamed-chunk-9-1.pdf Graphic file (type pdf)
-<use ProyectoAED_files/figure-latex/unnamed-chunk-9-1.pdf>
-Package pdftex.def Info: ProyectoAED_files/figure-latex/unnamed-chunk-9-1.pdf  used on input line 872.
-(pdftex.def)             Requested size: 469.75386pt x 325.2142pt.
-
-Overfull \hbox (96.73819pt too wide) in paragraph at lines 872--873
-[][] 
- []
-
-
-Package fancyhdr Warning: \headheight is too small (12.0pt): 
-(fancyhdr)                Make it at least 16.18796pt, for example:
-(fancyhdr)                \setlength{\headheight}{16.18796pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
-
-[11 <./ProyectoAED_files/figure-latex/unnamed-chunk-9-1.pdf>]
-<ProyectoAED_files/figure-latex/fig1-1.pdf, id=323, 216.81pt x 325.215pt>
+<ProyectoAED_files/figure-latex/fig1-1.pdf, id=306, 216.81pt x 325.215pt>
 File: ProyectoAED_files/figure-latex/fig1-1.pdf Graphic file (type pdf)
 <use ProyectoAED_files/figure-latex/fig1-1.pdf>
-Package pdftex.def Info: ProyectoAED_files/figure-latex/fig1-1.pdf  used on input line 927.
+Package pdftex.def Info: ProyectoAED_files/figure-latex/fig1-1.pdf  used on input line 869.
 (pdftex.def)             Requested size: 216.80946pt x 325.2142pt.
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -1602,15 +1497,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
 
-[12 <./ProyectoAED_files/figure-latex/fig1-1.pdf>]
-
-Package fancyhdr Warning: \headheight is too small (12.0pt): 
-(fancyhdr)                Make it at least 16.18796pt, for example:
-(fancyhdr)                \setlength{\headheight}{16.18796pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
-
-[13]
+[11 <./ProyectoAED_files/figure-latex/fig1-1.pdf>]
 *geometry* verbose mode - [ newgeometry ] result:
 * driver: pdftex
 * paper: <default>
@@ -1651,16 +1538,16 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
 
-[14
+[12
 
 
 ]
-Overfull \hbox (57.03455pt too wide) in paragraph at lines 1085--1085
+Overfull \hbox (57.03455pt too wide) in paragraph at lines 1027--1027
 []\T1/cmtt/m/n/10 ## BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib[] 
  []
 
 
-Overfull \hbox (183.00378pt too wide) in paragraph at lines 1085--1085
+Overfull \hbox (183.00378pt too wide) in paragraph at lines 1027--1027
 []\T1/cmtt/m/n/10 ## LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1[] 
  []
 
@@ -1671,64 +1558,74 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
 
-[15
+[13
 
 
 ]
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 1085--1085
-[]\T1/cmtt/m/n/10 ##  [1] s2_1.1.13          utf8_1.2.6         generics_0.1.4     class_7.3-23[] 
+Overfull \hbox (41.28839pt too wide) in paragraph at lines 1027--1027
+[]\T1/cmtt/m/n/10 ##  [1] s2_1.1.13          generics_0.1.4     class_7.3-23       KernSmooth_2.23-26[] 
  []
 
 
-Overfull \hbox (15.0448pt too wide) in paragraph at lines 1085--1085
-[]\T1/cmtt/m/n/10 ##  [5] KernSmooth_2.23-26 stringi_1.8.9      hms_1.1.4          digest_0.6.39[] 
+Overfull \hbox (20.29352pt too wide) in paragraph at lines 1027--1027
+[]\T1/cmtt/m/n/10 ##  [5] stringi_1.8.9      hms_1.1.4          digest_0.6.39      magrittr_2.0.5[] 
  []
 
 
-Overfull \hbox (30.79095pt too wide) in paragraph at lines 1085--1085
-[]\T1/cmtt/m/n/10 ##  [9] magrittr_2.0.5     evaluate_1.0.5     grid_4.6.1         timechange_0.4.0[] 
+Overfull \hbox (41.28839pt too wide) in paragraph at lines 1027--1027
+[]\T1/cmtt/m/n/10 ##  [9] evaluate_1.0.5     grid_4.6.1         timechange_0.4.0   RColorBrewer_1.1-3[] 
  []
 
 
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 1085--1085
-[]\T1/cmtt/m/n/10 ## [13] RColorBrewer_1.1-3 fastmap_1.2.0      cellranger_1.1.0   e1071_1.7-17[] 
+Overfull \hbox (4.54736pt too wide) in paragraph at lines 1027--1027
+[]\T1/cmtt/m/n/10 ## [17] scales_1.4.0       cli_3.6.6          rlang_1.3.0        units_1.0-1[] 
  []
 
 
-Overfull \hbox (4.54736pt too wide) in paragraph at lines 1085--1085
-[]\T1/cmtt/m/n/10 ## [17] DBI_1.3.0          scales_1.4.0       cli_3.6.6          rlang_1.3.0[] 
+Overfull \hbox (4.54736pt too wide) in paragraph at lines 1027--1027
+[]\T1/cmtt/m/n/10 ## [21] withr_3.0.3        yaml_2.3.12        otel_0.2.0         tools_4.6.1[] 
  []
 
 
-Overfull \hbox (9.79608pt too wide) in paragraph at lines 1085--1085
-[]\T1/cmtt/m/n/10 ## [29] proxy_0.4-29       lifecycle_1.0.5    classInt_0.4-11    rticles_0.27[] 
+Overfull \hbox (9.79608pt too wide) in paragraph at lines 1027--1027
+[]\T1/cmtt/m/n/10 ## [25] tzdb_0.5.0         vctrs_0.7.3        R6_2.6.1           proxy_0.4-29[] 
  []
 
 
-Overfull \hbox (36.03967pt too wide) in paragraph at lines 1085--1085
-[]\T1/cmtt/m/n/10 ## [37] Rcpp_1.1.2         xfun_0.61          tidyselect_1.2.1   rstudioapi_0.19.0[] 
+Overfull \hbox (25.54224pt too wide) in paragraph at lines 1027--1027
+[]\T1/cmtt/m/n/10 ## [29] lifecycle_1.0.5    classInt_0.4-11    rticles_0.27       pkgconfig_2.0.3[] 
+ []
+
+
+Overfull \hbox (9.79608pt too wide) in paragraph at lines 1027--1027
+[]\T1/cmtt/m/n/10 ## [37] xfun_0.61          tidyselect_1.2.1   rstudioapi_0.19.0  farver_2.1.2[] 
+ []
+
+
+Overfull \hbox (20.29352pt too wide) in paragraph at lines 1027--1027
+[]\T1/cmtt/m/n/10 ## [41] htmltools_0.5.9    rmarkdown_2.32     wk_0.9.5           compiler_4.6.1[] 
  []
 
 LaTeX Font Info:    Font shape `U/msa/m/n' will be
-(Font)              scaled to size 9.37807pt on input line 1096.
+(Font)              scaled to size 9.37807pt on input line 1038.
 LaTeX Font Info:    Font shape `U/msa/m/n' will be
-(Font)              scaled to size 7.29405pt on input line 1096.
+(Font)              scaled to size 7.29405pt on input line 1038.
 LaTeX Font Info:    Font shape `U/msb/m/n' will be
-(Font)              scaled to size 9.37807pt on input line 1096.
+(Font)              scaled to size 9.37807pt on input line 1038.
 LaTeX Font Info:    Font shape `U/msb/m/n' will be
-(Font)              scaled to size 7.29405pt on input line 1096.
+(Font)              scaled to size 7.29405pt on input line 1038.
 
-Overfull \hbox (40.23865pt too wide) in paragraph at lines 1115--1115
+Overfull \hbox (40.23865pt too wide) in paragraph at lines 1057--1057
 \T1/cmtt/m/n/9 by XXX\TS1/cmtt/m/n/9 ''\T1/cmtt/m/n/9 . Check carefully that the details given are accurate and use the  standard spelling
  []
 
 
-Overfull \hbox (21.34326pt too wide) in paragraph at lines 1139--1139
+Overfull \hbox (21.34326pt too wide) in paragraph at lines 1081--1081
 \T1/cmtt/m/n/9 to exclude this statement  if the study did not involve humans. Written informed consent
  []
 
 
-Overfull \hbox (49.68634pt too wide) in paragraph at lines 1139--1139
+Overfull \hbox (49.68634pt too wide) in paragraph at lines 1081--1081
 \T1/cmtt/m/n/9 for publication must be obtained from participating  patients who can be identified (including
  []
 
@@ -1739,8 +1636,8 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
 
-[16]
-Underfull \hbox (badness 10000) in paragraph at lines 1184--1184
+[14]
+Underfull \hbox (badness 10000) in paragraph at lines 1126--1126
 
  []
 
@@ -1752,7 +1649,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
 
-[17] 
+[15] 
 enddocument/afterlastpage (AED): lastpage setting LastPage.
 (./ProyectoAED.aux)
  ***********
@@ -1763,18 +1660,18 @@ Package rerunfilecheck Info: File `ProyectoAED.out' has not changed.
 (rerunfilecheck)             Checksum: 9A8D598A4A848009CD595345D9E8630D;2719.
  ) 
 Here is how much of TeX's memory you used:
- 34436 strings out of 469022
- 647231 string characters out of 5455495
+ 34419 strings out of 469022
+ 646644 string characters out of 5455495
  1146046 words of memory out of 5000000
- 62387 multiletter control sequences out of 15000+600000
+ 62381 multiletter control sequences out of 15000+600000
  697691 words of font info for 388 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  123i,12n,121p,1008b,741s stack positions out of 10000i,1000n,20000p,200000b,200000s
  </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/tctt0900.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt0900.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/tcit1000.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/tctt1000.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ecit1000.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt1000.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ecss0800.375pk></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/urw/palatino/uplb8a.pfb></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on ProyectoAED.pdf (17 pages, 298432 bytes).
+Output written on ProyectoAED.pdf (15 pages, 226903 bytes).
 PDF statistics:
- 652 PDF objects out of 1000 (max. 8388607)
- 410 compressed objects within 5 object streams
- 193 named destinations out of 1000 (max. 500000)
- 104628 words of extra memory for PDF output out of 106986 (max. 10000000)
+ 619 PDF objects out of 1000 (max. 8388607)
+ 388 compressed objects within 4 object streams
+ 182 named destinations out of 1000 (max. 500000)
+ 104623 words of extra memory for PDF output out of 106986 (max. 10000000)
 
