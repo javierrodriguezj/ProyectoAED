@@ -460,6 +460,74 @@ header.
 To use endnotes, change \texttt{endnotes:\ true} in the YAML header,
 then use \texttt{\textbackslash{}endnote\{This\ is\ an\ endnote.\}}.
 
+\#\#\#Preguntas a responder que he pensado (Javi):
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Oferta, Demanda y Capacidad Ciclista • ¿Existe correspondencia entre
+  la tipología de aparcamiento y el número de plazas? Analizar la
+  distribución del número de plazas por punto de estacionamiento
+  (plazas), identificando zonas con alta atomización (muchos puntos de
+  pocas plazas) frente a zonas con macroaparcamientos. • ¿Dónde se
+  concentran los ``desiertos'' de estacionamiento ciclista? Calcular la
+  distancia euclídea o de red de cada barrio/sección censal al
+  aparcamiento de bicicletas más cercano para detectar bolsas urbanas
+  desatendidas. • ¿Cómo interactúan los aparcamientos públicos en
+  horquilla/U invertida con las estaciones de Valenbisi? Evaluar si la
+  infraestructura para bicicleta privada complementa a las estaciones de
+  bicicleta compartida o si compiten en las mismas localizaciones
+  centrales dejando la periferia desabastecida.
+\item
+  Intermodalidad con el Transporte Público (EMT y Metro) • ¿Qué paradas
+  de autobús (EMT) o estaciones de metro actúan como nodos intermodales
+  reales? Calcular mediante buffers de proximidad (por ejemplo, radios
+  caminables de 50 a 100 metros) qué porcentaje de paradas de autobús
+  disponen de aparcamiento de bicis en su entorno inmediato.
+
+  • ¿Las líneas de EMT con mayor demanda cuentan con suficiente
+  infraestructura ciclista en sus cabeceras y nodos clave? Identificar
+  puntos críticos de conexión periférica donde los usuarios podrían
+  cambiar de la bicicleta al autobús urbano.
+\item
+  Conexión con la Infraestructura Ciclista (Carril Bici) • ¿Están los
+  aparcamientos ubicados a lo largo de la red de itinerarios ciclistas o
+  exigen circular por calzada/acera?
+
+  Calcular la distancia de cada aparcamiento al eje de carril bici más
+  próximo para detectar paradas aisladas que carecen de acceso seguro. •
+  ¿Cuál es la densidad de aparcamientos por kilómetro de carril bici en
+  los distintos distritos?
+\item
+  Relación Sociodemográfica y Territorial (Barrios y Población) •
+  ¿Existe equidad espacial en el ratio de plazas de bici por habitante?
+  Cruzar los límites de distritos/barrios y el padrón de habitantes para
+  calcular:
+  \[\text{Ratio} = \frac{\text{Plazas de aparcamiento de bicis}}{\text{Población total o población joven (16-35 años)}}\]
+
+  • ¿Se correlaciona la densidad de aparcamientos con la renta media o
+  la densidad poblacional? Verificar si los barrios con mayor densidad
+  residencial o menor renta disponen de una proporción equivalente de
+  infraestructura ciclista frente al centro histórico y zonas
+  turísticas/comerciales.
+\item
+  Puntos de Interés (Equipamientos Públicos) • ¿Tienen los centros
+  educativos (universidades, institutos) y centros sanitarios suficiente
+  cobertura de plazas? Medir la concentración de plazas disponibles en
+  un radio de 200 m de campus universitarios (Tarongers, Blasco Ibáñez,
+  Burjassot/UPV) y hospitales frente a zonas puramente residenciales.
+\end{enumerate}
+
+\#\#\#Javi:
+
+Cargamos las bibliotecas que vamos viendo que hagan falta
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(sf)}
+\end{Highlighting}
+\end{Shaded}
+
 \section{Materials and Methods}\label{materials-and-methods}
 
 Materials and Methods should be described with sufficient details to
@@ -482,6 +550,228 @@ prior to publication.
 Interventionary studies involving animals or humans, and other studies
 require ethical approval must list the authority that provided approval
 and the corresponding ethical approval code.
+
+\subsection{Luego vamos cambiando el texto, voy a ir cargando los
+datos}\label{luego-vamos-cambiando-el-texto-voy-a-ir-cargando-los-datos}
+
+Descargamos y leemos los datos
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{download.file}\NormalTok{(}\AttributeTok{url =} \StringTok{\textquotesingle{}https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1\&outFields=*\&f=geojson\textquotesingle{}}\NormalTok{, }\AttributeTok{destfile =} \StringTok{\textquotesingle{}./data/aparcaments\_bic.geojson\textquotesingle{}}\NormalTok{, }\AttributeTok{quiet =} \ConstantTok{TRUE}\NormalTok{)}
+
+\NormalTok{aparc\_bic }\OtherTok{\textless{}{-}} \FunctionTok{read\_sf}\NormalTok{(}\StringTok{"data/aparcaments\_bic.geojson"}\NormalTok{)}
+\FunctionTok{cat}\NormalTok{(}\StringTok{\textquotesingle{}Nuestros datos tienen\textquotesingle{}}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(aparc\_bic), }\StringTok{\textquotesingle{} estancias y \textquotesingle{}}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(aparc\_bic), }\StringTok{\textquotesingle{}variables.\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Nuestros datos tienen 2000  estancias y  4 variables.
+\end{verbatim}
+
+Es extraño, que el Ajuntament haya decidido poner \emph{exactamente}
+2000 aparcamientos de bicicletas. Vamos a comprobar otra forma de leer
+los datos (me la encontré por los interneses)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{aparc\_bic }\OtherTok{\textless{}{-}} \FunctionTok{st\_read}\NormalTok{(}\AttributeTok{dsn =} \StringTok{\textquotesingle{}https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1\&outFields=*\&f=geojson\textquotesingle{}}\NormalTok{, }\AttributeTok{quiet =} \ConstantTok{TRUE}\NormalTok{)}
+
+\FunctionTok{cat}\NormalTok{(}\StringTok{\textquotesingle{}Nuestros datos tienen\textquotesingle{}}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(aparc\_bic), }\StringTok{\textquotesingle{} estancias y \textquotesingle{}}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(aparc\_bic), }\StringTok{\textquotesingle{}variables.\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Nuestros datos tienen 4344  estancias y  4 variables.
+\end{verbatim}
+
+ya decía yo\ldots{}
+
+Ahora vamos a descargar los ValenBisi, EMT, FGV y población por barrios.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{valenbisi }\OtherTok{\textless{}{-}} \FunctionTok{st\_read}\NormalTok{(}\AttributeTok{dsn =} \StringTok{\textquotesingle{}https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1\&outFields=*\&f=geojson\textquotesingle{}}\NormalTok{, }\AttributeTok{quiet =} \ConstantTok{TRUE}\NormalTok{)}
+
+\FunctionTok{cat}\NormalTok{(}\StringTok{\textquotesingle{}Los datos de ValenBisi tienen\textquotesingle{}}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(valenbisi), }\StringTok{\textquotesingle{} estancias y \textquotesingle{}}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(valenbisi), }\StringTok{\textquotesingle{}variables. }\SpecialCharTok{\textbackslash{}n}\StringTok{\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Los datos de ValenBisi tienen 273  estancias y  12 variables.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{emt }\OtherTok{\textless{}{-}} \FunctionTok{st\_read}\NormalTok{(}\AttributeTok{dsn =} \StringTok{\textquotesingle{}https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1\&outFields=*\&f=geojson\textquotesingle{}}\NormalTok{, }\AttributeTok{quiet =} \ConstantTok{TRUE}\NormalTok{)}
+
+\FunctionTok{cat}\NormalTok{(}\StringTok{\textquotesingle{}Los datos de EMT tienen\textquotesingle{}}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(emt), }\StringTok{\textquotesingle{} estancias y \textquotesingle{}}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(emt), }\StringTok{\textquotesingle{}variables.}\SpecialCharTok{\textbackslash{}n}\StringTok{\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Los datos de EMT tienen 1155  estancias y  9 variables.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{fgv }\OtherTok{\textless{}{-}} \FunctionTok{st\_read}\NormalTok{(}\AttributeTok{dsn =} \StringTok{\textquotesingle{}https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1\&outFields=*\&f=geojson\textquotesingle{}}\NormalTok{, }\AttributeTok{quiet =} \ConstantTok{TRUE}\NormalTok{)}
+
+\FunctionTok{cat}\NormalTok{(}\StringTok{\textquotesingle{}Los datos de FGV tienen\textquotesingle{}}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(fgv), }\StringTok{\textquotesingle{} estancias y \textquotesingle{}}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(fgv), }\StringTok{\textquotesingle{}variables.}\SpecialCharTok{\textbackslash{}n}\StringTok{\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Los datos de FGV tienen 144  estancias y  8 variables.
+\end{verbatim}
+
+Como queremos ver si existe alguna relación entre densidad demográfica y
+aparcamientos de bicicletas y otros medios de transporte, cargamos
+tambien datos poblacionales.
+
+Notamos que en la sección de \emph{Datos Demográficos} del portal de
+datos abiertos \url{https://opendata.vlci.valencia.es/} está vacío.
+Vemos que existe un conjuntos de datos llamado \emph{Manzanas
+catastrales con datos de población}, así que los cargamos\_\_
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pob\_mal }\OtherTok{\textless{}{-}} \FunctionTok{st\_read}\NormalTok{(}\AttributeTok{dsn =} \StringTok{\textquotesingle{}https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1\&outFields=\%2A\&f=geojson\textquotesingle{}}\NormalTok{, }\AttributeTok{quiet =} \ConstantTok{TRUE}\NormalTok{)}
+
+\FunctionTok{cat}\NormalTok{(}\StringTok{\textquotesingle{}Los datos de población tienen\textquotesingle{}}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(pob\_mal), }\StringTok{\textquotesingle{} estancias y \textquotesingle{}}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(pob\_mal), }\StringTok{\textquotesingle{}variables.}\SpecialCharTok{\textbackslash{}n}\StringTok{\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Los datos de población tienen 88  estancias y  7 variables.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{names}\NormalTok{(pob\_mal)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "objectid"             "codbarrio"            "nombre"              
+## [4] "coddistbar"           "coddistrit"           "gis.gis.BARRIOS.area"
+## [7] "geometry"
+\end{verbatim}
+
+Pero vemos que no hay datos de población. Por tanto tendremos que buscar
+otras fuentes.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{url\_descarga }\OtherTok{\textless{}{-}} \StringTok{"https://www.valencia.es/estadistica/inf\_dtba/2026/Barrios2026.zip"}
+\NormalTok{carpeta\_datos }\OtherTok{\textless{}{-}} \StringTok{"data"}
+\NormalTok{entrada }\OtherTok{\textless{}{-}} \FunctionTok{file.path}\NormalTok{(carpeta\_datos, }\StringTok{"Barrios2026.zip"}\NormalTok{)}
+\NormalTok{salida  }\OtherTok{\textless{}{-}} \StringTok{"densidad\_barrios\_2025.csv"}
+\end{Highlighting}
+\end{Shaded}
+
+Mediante inspección, vemos que el zip contiene la información de los 88
+barrios de Valencia. Como es muy complicado automatizar esta recolección
+de datos de cada uno de los xlsx, utilizamos ayuda de \emph{Claude} para
+extraer esa información.
+
+\begin{verbatim}
+## Usando el zip ya descargado: data/Barrios2026.zip
+\end{verbatim}
+
+\begin{verbatim}
+##   distrito barrio nombre_barrio personas superficie_ha densidad_hab_ha
+## 1        1      1        la Seu     3275        22.107        148.1431
+## 2        1      2      la Xerea     4277        31.165        137.2373
+## 3        1      3      el Carme     7252        38.407        188.8197
+## 4        1      4      el Pilar     5472        16.161        338.5929
+## 5        1      5     el Mercat     4101        17.279        237.3401
+## 6        1      6 Sant Francesc     6133        43.866        139.8122
+\end{verbatim}
+
+\begin{verbatim}
+## Guardado en: /Users/javier/Documents/MCD/AED/ProyectoAED/ProyectoAED/densidad_barrios_2025.csv
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{barrios }\OtherTok{\textless{}{-}} \FunctionTok{st\_read}\NormalTok{(}\AttributeTok{dsn =} \StringTok{\textquotesingle{}https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1\&outFields=*\&f=geojson\textquotesingle{}}\NormalTok{, }\AttributeTok{quiet =} \ConstantTok{TRUE}\NormalTok{)}
+
+\FunctionTok{cat}\NormalTok{(}\StringTok{\textquotesingle{}Los datos de barrios tienen\textquotesingle{}}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(barrios), }\StringTok{\textquotesingle{} estancias y \textquotesingle{}}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(barrios), }\StringTok{\textquotesingle{}variables.}\SpecialCharTok{\textbackslash{}n}\StringTok{\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Los datos de barrios tienen 88  estancias y  7 variables.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{head}\NormalTok{(barrios)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Simple feature collection with 6 features and 6 fields
+## Geometry type: POLYGON
+## Dimension:     XY
+## Bounding box:  xmin: -0.4025012 ymin: 39.47809 xmax: -0.3515598 ymax: 39.53302
+## Geodetic CRS:  WGS 84
+##   objectid codbarrio      nombre coddistbar coddistrit gis.gis.BARRIOS.area
+## 1        5         1  BENIFARAIG        171         17             14228152
+## 2        9         1   BENICALAP        161         16             17189645
+## 3       10         2   TORREFIEL        152         15              7132926
+## 4       11         4      TORMOS        054          5               279952
+## 5       12         5 SANT ANTONI        055          5              2497341
+## 6       13         1  BENIMACLET        141         14              7431832
+##                         geometry
+## 1 POLYGON ((-0.3763896 39.528...
+## 2 POLYGON ((-0.3813917 39.498...
+## 3 POLYGON ((-0.3712209 39.498...
+## 4 POLYGON ((-0.3821647 39.490...
+## 5 POLYGON ((-0.3738837 39.492...
+## 6 POLYGON ((-0.3590119 39.488...
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{distritos }\OtherTok{\textless{}{-}} \FunctionTok{st\_read}\NormalTok{(}\AttributeTok{dsn =} \StringTok{\textquotesingle{}https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1\&outFields=*\&f=geojson\textquotesingle{}}\NormalTok{, }\AttributeTok{quiet =} \ConstantTok{TRUE}\NormalTok{)}
+
+\FunctionTok{cat}\NormalTok{(}\StringTok{\textquotesingle{}Los datos de distritos tienen\textquotesingle{}}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(distritos), }\StringTok{\textquotesingle{} estancias y \textquotesingle{}}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(distritos), }\StringTok{\textquotesingle{}variables.}\SpecialCharTok{\textbackslash{}n}\StringTok{\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Los datos de distritos tienen 22  estancias y  5 variables.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{head}\NormalTok{(distritos)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Simple feature collection with 6 features and 4 fields
+## Geometry type: POLYGON
+## Dimension:     XY
+## Bounding box:  xmin: -0.3962658 ymin: 39.42634 xmax: -0.3345913 ymax: 39.49206
+## Geodetic CRS:  WGS 84
+##   objectid          nombre coddistrit gis.gis.DISTRITOS.area
+## 1        1 QUATRE CARRERES         10                     NA
+## 2        6       LA SAIDIA          5               19439315
+## 3        8 EL PLA DEL REAL          6               16927129
+## 4        9    CIUTAT VELLA          1               16898516
+## 5       10       EXTRAMURS          3               19716162
+## 6       12      L'EIXAMPLE          2               17331405
+##                         geometry
+## 1 POLYGON ((-0.3359056 39.442...
+## 2 POLYGON ((-0.3894709 39.488...
+## 3 POLYGON ((-0.362286 39.4848...
+## 4 POLYGON ((-0.3810546 39.482...
+## 5 POLYGON ((-0.3833952 39.481...
+## 6 POLYGON ((-0.3645362 39.471...
+\end{verbatim}
 
 \section{Results}\label{results}
 
@@ -647,6 +937,53 @@ discussion is unusually long or complex.
 
 This section is not mandatory, but may be added if there are patents
 resulting from the work reported in this manuscript.
+
+\section{Anexo: Información de la
+sesión}\label{anexo-informaciuxf3n-de-la-sesiuxf3n}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{sessionInfo}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## R version 4.6.1 (2026-06-24)
+## Platform: aarch64-apple-darwin23
+## Running under: macOS Sonoma 14.7.3
+## 
+## Matrix products: default
+## BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib 
+## LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+## 
+## locale:
+## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+## 
+## time zone: Europe/Madrid
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+##  [1] readxl_1.5.0.1  knitr_1.52      lubridate_1.9.5 forcats_1.0.1  
+##  [5] stringr_1.6.0   dplyr_1.2.1     purrr_1.2.2     readr_2.2.0    
+##  [9] tidyr_1.3.2     tibble_3.3.1    ggplot2_4.0.3   tidyverse_2.0.0
+## [13] sf_1.1-3       
+## 
+## loaded via a namespace (and not attached):
+##  [1] generics_0.1.4     class_7.3-23       KernSmooth_2.23-26 stringi_1.8.9     
+##  [5] hms_1.1.4          digest_0.6.39      magrittr_2.0.5     evaluate_1.0.5    
+##  [9] grid_4.6.1         timechange_0.4.0   RColorBrewer_1.1-3 fastmap_1.2.0     
+## [13] cellranger_1.1.0   e1071_1.7-17       DBI_1.3.0          scales_1.4.0      
+## [17] cli_3.6.6          rlang_1.3.0        units_1.0-1        withr_3.0.3       
+## [21] yaml_2.3.12        otel_0.2.0         tools_4.6.1        tzdb_0.5.0        
+## [25] vctrs_0.7.3        R6_2.6.1           proxy_0.4-29       lifecycle_1.0.5   
+## [29] classInt_0.4-11    rticles_0.27       pkgconfig_2.0.3    pillar_1.11.1     
+## [33] gtable_0.3.6       glue_1.8.1         Rcpp_1.1.2         xfun_0.61         
+## [37] tidyselect_1.2.1   rstudioapi_0.19.0  farver_2.1.2       htmltools_0.5.9   
+## [41] rmarkdown_2.32     compiler_4.6.1     S7_0.2.2
+\end{verbatim}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

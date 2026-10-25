@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.23)  24 OCT 2026 17:32
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.23)  25 OCT 2026 11:32
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1179,7 +1179,7 @@ Package epstopdf Info: Source file: <Definitions/logo-mdpi.eps>
 (epstopdf)             Command: <repstopdf --outfile=Definitions/logo-mdpi-eps-converted-to.pdf Definitions/logo-mdpi.eps>
 (epstopdf)             \includegraphics on input line 241.
 Package epstopdf Info: Output file is already uptodate.
-<Definitions/logo-mdpi-eps-converted-to.pdf, id=82, 88.33pt x 58.2175pt>
+<Definitions/logo-mdpi-eps-converted-to.pdf, id=90, 88.33pt x 58.2175pt>
 File: Definitions/logo-mdpi-eps-converted-to.pdf Graphic file (type pdf)
 <use Definitions/logo-mdpi-eps-converted-to.pdf>
 Package pdftex.def Info: Definitions/logo-mdpi-eps-converted-to.pdf  used on input line 241.
@@ -1295,10 +1295,176 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 
 ]
-<ProyectoAED_files/figure-latex/fig1-1.pdf, id=202, 216.81pt x 325.215pt>
+Package microtype Info: Loading generic protrusion settings for font family
+(microtype)             `cmtt' (encoding: TS1).
+(microtype)             For optimal results, create family-specific settings.
+(microtype)             See the microtype manual for details.
+
+Overfull \hbox (660.63715pt too wide) detected at line 561
+[][]\T1/cmtt/m/n/10 download.file[]([]url =[] []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []destfile =[] []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 ./data/aparcaments_bic.geojson\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []quiet =[] []TRUE[]) 
+ []
+
+
+Overfull \hbox (93.77557pt too wide) detected at line 564
+[][]\T1/cmtt/m/n/10 cat[]([]\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 Nuestros datos tienen\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []nrow[](aparc_bic), []\TS1/cmtt/m/n/10 ' \T1/cmtt/m/n/10 estancias y \TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []ncol[](aparc_bic), []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 variables.\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 ) 
+ []
+
+
+Overfull \hbox (461.18585pt too wide) detected at line 578
+[]\T1/cmtt/m/n/10 aparc_bic []<-[] []st_read[]([]dsn =[] []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []quiet =[] []TRUE[]) 
+ []
+
+
+Overfull \hbox (93.77557pt too wide) detected at line 580
+[][]\T1/cmtt/m/n/10 cat[]([]\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 Nuestros datos tienen\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []nrow[](aparc_bic), []\TS1/cmtt/m/n/10 ' \T1/cmtt/m/n/10 estancias y \TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []ncol[](aparc_bic), []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 variables.\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 ) 
+ []
+
+
+Overfull \hbox (461.18585pt too wide) detected at line 594
+[]\T1/cmtt/m/n/10 valenbisi []<-[] []st_read[]([]dsn =[] []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []quiet =[] []TRUE[]) 
+ []
+
+
+Overfull \hbox (151.51147pt too wide) detected at line 596
+[][]\T1/cmtt/m/n/10 cat[]([]\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 Los datos de ValenBisi tienen\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []nrow[](valenbisi), []\TS1/cmtt/m/n/10 ' \T1/cmtt/m/n/10 estancias y \TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []ncol[](valenbisi), []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 variables. [][]\n[][]\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 ) 
+ []
+
+
+Overfull \hbox (429.69354pt too wide) detected at line 606
+[]\T1/cmtt/m/n/10 emt []<-[] []st_read[]([]dsn =[] []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []quiet =[] []TRUE[]) 
+ []
+
+
+Overfull \hbox (51.78583pt too wide) detected at line 608
+[][]\T1/cmtt/m/n/10 cat[]([]\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 Los datos de EMT tienen\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []nrow[](emt), []\TS1/cmtt/m/n/10 ' \T1/cmtt/m/n/10 estancias y \TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []ncol[](emt), []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 variables.[][]\n[][]\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 ) 
+ []
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 16.18796pt, for example:
+(fancyhdr)                \setlength{\headheight}{16.18796pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
+
+[7]
+Overfull \hbox (429.69354pt too wide) detected at line 618
+[]\T1/cmtt/m/n/10 fgv []<-[] []st_read[]([]dsn =[] []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []quiet =[] []TRUE[]) 
+ []
+
+
+Overfull \hbox (51.78583pt too wide) detected at line 620
+[][]\T1/cmtt/m/n/10 cat[]([]\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 Los datos de FGV tienen\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []nrow[](fgv), []\TS1/cmtt/m/n/10 ' \T1/cmtt/m/n/10 estancias y \TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []ncol[](fgv), []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 variables.[][]\n[][]\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 ) 
+ []
+
+
+Overfull \hbox (0.60384pt too wide) in paragraph at lines 628--631
+[]\T1/ppl/m/n/10 (-20) Como quer-e-mos ver si ex-iste al-guna relación en-tre den-si-dad de-mográ-fica y aparcamien-
+ []
+
+
+Overfull \hbox (560.9115pt too wide) detected at line 639
+[]\T1/cmtt/m/n/10 pob_mal []<-[] []st_read[]([]dsn =[] []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=%2A&f=geojson\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []quiet =[] []TRUE[]) 
+ []
+
+
+Overfull \hbox (125.26788pt too wide) detected at line 641
+[][]\T1/cmtt/m/n/10 cat[]([]\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 Los datos de población tienen\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []nrow[](pob_mal), []\TS1/cmtt/m/n/10 ' \T1/cmtt/m/n/10 estancias y \TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []ncol[](pob_mal), []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 variables.[][]\n[][]\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 ) 
+ []
+
+
+Overfull \hbox (41.28839pt too wide) detected at line 666
+[]\T1/cmtt/m/n/10 url_descarga []<-[] []"https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"[] 
+ []
+
+
+Overfull \hbox (114.77045pt too wide) in paragraph at lines 694--694
+[]\T1/cmtt/m/n/10 ## Guardado en: /Users/javier/Documents/MCD/AED/ProyectoAED/ProyectoAED/densidad_barrios_2025.csv[] 
+ []
+
+
+Overfull \hbox (550.41406pt too wide) detected at line 698
+[]\T1/cmtt/m/n/10 barrios []<-[] []st_read[]([]dsn =[] []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []quiet =[] []TRUE[]) 
+ []
+
+
+Overfull \hbox (114.77045pt too wide) detected at line 700
+[][]\T1/cmtt/m/n/10 cat[]([]\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 Los datos de barrios tienen\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []nrow[](barrios), []\TS1/cmtt/m/n/10 ' \T1/cmtt/m/n/10 estancias y \TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []ncol[](barrios), []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 variables.[][]\n[][]\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 ) 
+ []
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 16.18796pt, for example:
+(fancyhdr)                \setlength{\headheight}{16.18796pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
+
+[8]
+Overfull \hbox (30.79095pt too wide) in paragraph at lines 734--734
+[]\T1/cmtt/m/n/10 ## Bounding box:  xmin: -0.4025012 ymin: 39.47809 xmax: -0.3515598 ymax: 39.53302[] 
+ []
+
+
+Overfull \hbox (15.0448pt too wide) in paragraph at lines 734--734
+[]\T1/cmtt/m/n/10 ##   objectid codbarrio      nombre coddistbar coddistrit gis.gis.BARRIOS.area[] 
+ []
+
+
+Overfull \hbox (15.0448pt too wide) in paragraph at lines 734--734
+[]\T1/cmtt/m/n/10 ## 1        5         1  BENIFARAIG        171         17             14228152[] 
+ []
+
+
+Overfull \hbox (15.0448pt too wide) in paragraph at lines 734--734
+[]\T1/cmtt/m/n/10 ## 2        9         1   BENICALAP        161         16             17189645[] 
+ []
+
+
+Overfull \hbox (15.0448pt too wide) in paragraph at lines 734--734
+[]\T1/cmtt/m/n/10 ## 3       10         2   TORREFIEL        152         15              7132926[] 
+ []
+
+
+Overfull \hbox (15.0448pt too wide) in paragraph at lines 734--734
+[]\T1/cmtt/m/n/10 ## 4       11         4      TORMOS        054          5               279952[] 
+ []
+
+
+Overfull \hbox (15.0448pt too wide) in paragraph at lines 734--734
+[]\T1/cmtt/m/n/10 ## 5       12         5 SANT ANTONI        055          5              2497341[] 
+ []
+
+
+Overfull \hbox (15.0448pt too wide) in paragraph at lines 734--734
+[]\T1/cmtt/m/n/10 ## 6       13         1  BENIMACLET        141         14              7431832[] 
+ []
+
+
+Overfull \hbox (560.9115pt too wide) detected at line 738
+[]\T1/cmtt/m/n/10 distritos []<-[] []st_read[]([]dsn =[] []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []quiet =[] []TRUE[]) 
+ []
+
+
+Overfull \hbox (146.26276pt too wide) detected at line 740
+[][]\T1/cmtt/m/n/10 cat[]([]\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 Los datos de distritos tienen\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []nrow[](distritos), []\TS1/cmtt/m/n/10 ' \T1/cmtt/m/n/10 estancias y \TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 , []ncol[](distritos), []\TS1/cmtt/m/n/10 '\T1/cmtt/m/n/10 variables.[][]\n[][]\TS1/cmtt/m/n/10 '[]\T1/cmtt/m/n/10 ) 
+ []
+
+
+Overfull \hbox (30.79095pt too wide) in paragraph at lines 774--774
+[]\T1/cmtt/m/n/10 ## Bounding box:  xmin: -0.3962658 ymin: 39.42634 xmax: -0.3345913 ymax: 39.49206[] 
+ []
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 16.18796pt, for example:
+(fancyhdr)                \setlength{\headheight}{16.18796pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
+
+[9]
+<ProyectoAED_files/figure-latex/fig1-1.pdf, id=263, 216.81pt x 325.215pt>
 File: ProyectoAED_files/figure-latex/fig1-1.pdf Graphic file (type pdf)
 <use ProyectoAED_files/figure-latex/fig1-1.pdf>
-Package pdftex.def Info: ProyectoAED_files/figure-latex/fig1-1.pdf  used on input line 539.
+Package pdftex.def Info: ProyectoAED_files/figure-latex/fig1-1.pdf  used on input line 829.
 (pdftex.def)             Requested size: 216.80946pt x 325.2142pt.
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -1307,7 +1473,15 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
 
-[7 <./ProyectoAED_files/figure-latex/fig1-1.pdf>]
+[10]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 16.18796pt, for example:
+(fancyhdr)                \setlength{\headheight}{16.18796pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
+
+[11 <./ProyectoAED_files/figure-latex/fig1-1.pdf>]
 *geometry* verbose mode - [ newgeometry ] result:
 * driver: pdftex
 * paper: <default>
@@ -1348,53 +1522,105 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
 
-[8
+[12
 
 
 ]
-LaTeX Font Info:    Font shape `U/msa/m/n' will be
-(Font)              scaled to size 9.37807pt on input line 660.
-LaTeX Font Info:    Font shape `U/msa/m/n' will be
-(Font)              scaled to size 7.29405pt on input line 660.
-LaTeX Font Info:    Font shape `U/msb/m/n' will be
-(Font)              scaled to size 9.37807pt on input line 660.
-LaTeX Font Info:    Font shape `U/msb/m/n' will be
-(Font)              scaled to size 7.29405pt on input line 660.
-Package microtype Info: Loading generic protrusion settings for font family
-(microtype)             `cmtt' (encoding: TS1).
-(microtype)             For optimal results, create family-specific settings.
-(microtype)             See the microtype manual for details.
+Overfull \hbox (57.03455pt too wide) in paragraph at lines 986--986
+[]\T1/cmtt/m/n/10 ## BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib[] 
+ []
 
-Overfull \hbox (40.23865pt too wide) in paragraph at lines 679--679
+
+Overfull \hbox (183.00378pt too wide) in paragraph at lines 986--986
+[]\T1/cmtt/m/n/10 ## LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1[] 
+ []
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 16.18796pt, for example:
+(fancyhdr)                \setlength{\headheight}{16.18796pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
+
+[13
+
+
+]
+Overfull \hbox (15.0448pt too wide) in paragraph at lines 986--986
+[]\T1/cmtt/m/n/10 ##  [1] generics_0.1.4     class_7.3-23       KernSmooth_2.23-26 stringi_1.8.9[] 
+ []
+
+
+Overfull \hbox (20.29352pt too wide) in paragraph at lines 986--986
+[]\T1/cmtt/m/n/10 ##  [5] hms_1.1.4          digest_0.6.39      magrittr_2.0.5     evaluate_1.0.5[] 
+ []
+
+
+Overfull \hbox (15.0448pt too wide) in paragraph at lines 986--986
+[]\T1/cmtt/m/n/10 ##  [9] grid_4.6.1         timechange_0.4.0   RColorBrewer_1.1-3 fastmap_1.2.0[] 
+ []
+
+
+Overfull \hbox (9.79608pt too wide) in paragraph at lines 986--986
+[]\T1/cmtt/m/n/10 ## [13] cellranger_1.1.0   e1071_1.7-17       DBI_1.3.0          scales_1.4.0[] 
+ []
+
+
+Overfull \hbox (4.54736pt too wide) in paragraph at lines 986--986
+[]\T1/cmtt/m/n/10 ## [17] cli_3.6.6          rlang_1.3.0        units_1.0-1        withr_3.0.3[] 
+ []
+
+
+Overfull \hbox (25.54224pt too wide) in paragraph at lines 986--986
+[]\T1/cmtt/m/n/10 ## [25] vctrs_0.7.3        R6_2.6.1           proxy_0.4-29       lifecycle_1.0.5[] 
+ []
+
+
+Overfull \hbox (15.0448pt too wide) in paragraph at lines 986--986
+[]\T1/cmtt/m/n/10 ## [29] classInt_0.4-11    rticles_0.27       pkgconfig_2.0.3    pillar_1.11.1[] 
+ []
+
+
+Overfull \hbox (25.54224pt too wide) in paragraph at lines 986--986
+[]\T1/cmtt/m/n/10 ## [37] tidyselect_1.2.1   rstudioapi_0.19.0  farver_2.1.2       htmltools_0.5.9[] 
+ []
+
+LaTeX Font Info:    Font shape `U/msa/m/n' will be
+(Font)              scaled to size 9.37807pt on input line 997.
+LaTeX Font Info:    Font shape `U/msa/m/n' will be
+(Font)              scaled to size 7.29405pt on input line 997.
+LaTeX Font Info:    Font shape `U/msb/m/n' will be
+(Font)              scaled to size 9.37807pt on input line 997.
+LaTeX Font Info:    Font shape `U/msb/m/n' will be
+(Font)              scaled to size 7.29405pt on input line 997.
+
+Overfull \hbox (40.23865pt too wide) in paragraph at lines 1016--1016
 \T1/cmtt/m/n/9 by XXX\TS1/cmtt/m/n/9 ''\T1/cmtt/m/n/9 . Check carefully that the details given are accurate and use the  standard spelling
  []
 
 
-Package fancyhdr Warning: \headheight is too small (12.0pt): 
-(fancyhdr)                Make it at least 16.18796pt, for example:
-(fancyhdr)                \setlength{\headheight}{16.18796pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
-
-[9
-
-
-]
-Overfull \hbox (21.34326pt too wide) in paragraph at lines 703--703
+Overfull \hbox (21.34326pt too wide) in paragraph at lines 1040--1040
 \T1/cmtt/m/n/9 to exclude this statement  if the study did not involve humans. Written informed consent
  []
 
 
-Overfull \hbox (49.68634pt too wide) in paragraph at lines 703--703
+Overfull \hbox (49.68634pt too wide) in paragraph at lines 1040--1040
 \T1/cmtt/m/n/9 for publication must be obtained from participating  patients who can be identified (including
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 748--748
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 16.18796pt, for example:
+(fancyhdr)                \setlength{\headheight}{16.18796pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
+
+[14]
+Underfull \hbox (badness 10000) in paragraph at lines 1085--1085
 
  []
 
-(./appendix.tex
+(./appendix.tex) (./ProyectoAED.bbl)
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 16.18796pt, for example:
@@ -1402,15 +1628,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
 
-[10]) (./ProyectoAED.bbl)
-
-Package fancyhdr Warning: \headheight is too small (12.0pt): 
-(fancyhdr)                Make it at least 16.18796pt, for example:
-(fancyhdr)                \setlength{\headheight}{16.18796pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-4.18796pt}.
-
-[11] 
+[15] 
 enddocument/afterlastpage (AED): lastpage setting LastPage.
 (./ProyectoAED.aux)
  ***********
@@ -1418,21 +1636,21 @@ LaTeX2e <2026-06-01>
 L3 programming layer <2026-09-09>
  ***********
 Package rerunfilecheck Info: File `ProyectoAED.out' has not changed.
-(rerunfilecheck)             Checksum: 648CE4BB6AAA33AE67C8E019398FC4A9;2121.
+(rerunfilecheck)             Checksum: 9A8D598A4A848009CD595345D9E8630D;2719.
  ) 
 Here is how much of TeX's memory you used:
- 34256 strings out of 469022
- 644272 string characters out of 5455495
+ 34376 strings out of 469022
+ 645875 string characters out of 5455495
  1146046 words of memory out of 5000000
- 62362 multiletter control sequences out of 15000+600000
- 692427 words of font info for 340 fonts, out of 8000000 for 9000
+ 62376 multiletter control sequences out of 15000+600000
+ 697234 words of font info for 385 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 123i,12n,121p,1008b,670s stack positions out of 10000i,1000n,20000p,200000b,200000s
- </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/tctt0900.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt0900.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ecit1000.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt1000.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ecss0800.375pk></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/urw/palatino/uplb8a.pfb></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on ProyectoAED.pdf (11 pages, 196965 bytes).
+ 123i,12n,121p,1008b,741s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/tctt0900.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt0900.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/tctt1000.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ecit1000.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt1000.600pk> </Users/javier/Library/TinyTeX/texmf-var/fonts/pk/ljfour/jknappen/ec/ecss0800.375pk></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/urw/palatino/uplb8a.pfb></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></Users/javier/Library/TinyTeX/texmf-dist/fonts/type1/urw/palatino/uplri8a.pfb>
+Output written on ProyectoAED.pdf (15 pages, 219629 bytes).
 PDF statistics:
- 447 PDF objects out of 1000 (max. 8388607)
- 267 compressed objects within 3 object streams
- 103 named destinations out of 1000 (max. 500000)
- 99487 words of extra memory for PDF output out of 106986 (max. 10000000)
+ 558 PDF objects out of 1000 (max. 8388607)
+ 343 compressed objects within 4 object streams
+ 148 named destinations out of 1000 (max. 500000)
+ 104111 words of extra memory for PDF output out of 106986 (max. 10000000)
 

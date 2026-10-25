@@ -270,6 +270,19 @@ knitr::kable(rticles::string_to_table(mdpi_journals, 8),
 
 \finishlandscape
 
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(repos = c(CRAN = "[https://cloud.r-project.org](https://cloud.r-project.org)"))
+
+
+paquetes <- c("sf", "tidyverse", "knitr", "readxl")
+faltantes <- paquetes[!(paquetes %in% installed.packages()[, "Package"])]
+if (length(faltantes) > 0) {
+  install.packages(faltantes)
+}
+invisible(lapply(paquetes, library, character.only = TRUE))
+```
+
 # Introduction
 
 The introduction should briefly place the study in a broad context and
@@ -288,6 +301,74 @@ specify the journal in the YAML header.
 
 To use endnotes, change `endnotes: true` in the YAML header, then use
 `\endnote{This is an endnote.}`.
+
+###Preguntas a responder que he pensado (Javi):
+
+1.  Oferta, Demanda y Capacidad Ciclista • ¿Existe correspondencia entre
+    la tipología de aparcamiento y el número de plazas? Analizar la
+    distribución del número de plazas por punto de estacionamiento
+    (plazas), identificando zonas con alta atomización (muchos puntos de
+    pocas plazas) frente a zonas con macroaparcamientos. • ¿Dónde se
+    concentran los "desiertos" de estacionamiento ciclista? Calcular la
+    distancia euclídea o de red de cada barrio/sección censal al
+    aparcamiento de bicicletas más cercano para detectar bolsas urbanas
+    desatendidas. • ¿Cómo interactúan los aparcamientos públicos en
+    horquilla/U invertida con las estaciones de Valenbisi? Evaluar si la
+    infraestructura para bicicleta privada complementa a las estaciones
+    de bicicleta compartida o si compiten en las mismas localizaciones
+    centrales dejando la periferia desabastecida.
+
+2.  Intermodalidad con el Transporte Público (EMT y Metro) • ¿Qué
+    paradas de autobús (EMT) o estaciones de metro actúan como nodos
+    intermodales reales? Calcular mediante buffers de proximidad (por
+    ejemplo, radios caminables de 50 a 100 metros) qué porcentaje de
+    paradas de autobús disponen de aparcamiento de bicis en su entorno
+    inmediato.
+
+    • ¿Las líneas de EMT con mayor demanda cuentan con suficiente
+    infraestructura ciclista en sus cabeceras y nodos clave? Identificar
+    puntos críticos de conexión periférica donde los usuarios podrían
+    cambiar de la bicicleta al autobús urbano.
+
+3.  Conexión con la Infraestructura Ciclista (Carril Bici) • ¿Están los
+    aparcamientos ubicados a lo largo de la red de itinerarios ciclistas
+    o exigen circular por calzada/acera?
+
+    Calcular la distancia de cada aparcamiento al eje de carril bici más
+    próximo para detectar paradas aisladas que carecen de acceso seguro.
+    • ¿Cuál es la densidad de aparcamientos por kilómetro de carril bici
+    en los distintos distritos?
+
+4.  Relación Sociodemográfica y Territorial (Barrios y Población) •
+    ¿Existe equidad espacial en el ratio de plazas de bici por
+    habitante? Cruzar los límites de distritos/barrios y el padrón de
+    habitantes para calcular:
+    $$\text{Ratio} = \frac{\text{Plazas de aparcamiento de bicis}}{\text{Población total o población joven (16-35 años)}}$$
+
+    • ¿Se correlaciona la densidad de aparcamientos con la renta media o
+    la densidad poblacional? Verificar si los barrios con mayor densidad
+    residencial o menor renta disponen de una proporción equivalente de
+    infraestructura ciclista frente al centro histórico y zonas
+    turísticas/comerciales.
+
+5.  Puntos de Interés (Equipamientos Públicos) • ¿Tienen los centros
+    educativos (universidades, institutos) y centros sanitarios
+    suficiente cobertura de plazas? Medir la concentración de plazas
+    disponibles en un radio de 200 m de campus universitarios
+    (Tarongers, Blasco Ibáñez, Burjassot/UPV) y hospitales frente a
+    zonas puramente residenciales.
+
+###Javi:
+
+Cargamos las bibliotecas que vamos viendo que hagan falta
+
+```{r include=FALSE}
+rm(list = ls()) #borramos environment para empezar de 0 y no tener   variables residuales
+```
+
+```{r}
+library(sf)
+```
 
 # Materials and Methods
 
@@ -311,6 +392,183 @@ prior to publication.
 Interventionary studies involving animals or humans, and other studies
 require ethical approval must list the authority that provided approval
 and the corresponding ethical approval code.
+
+## Luego vamos cambiando el texto, voy a ir cargando los datos
+
+Descargamos y leemos los datos
+
+```{r}
+download.file(url = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', destfile = './data/aparcaments_bic.geojson', quiet = TRUE)
+
+aparc_bic <- read_sf("data/aparcaments_bic.geojson")
+cat('Nuestros datos tienen', nrow(aparc_bic), ' estancias y ', ncol(aparc_bic), 'variables.')
+```
+
+Es extraño, que el Ajuntament haya decidido poner *exactamente* 2000
+aparcamientos de bicicletas. Vamos a comprobar otra forma de leer los
+datos (me la encontré por los interneses)
+
+```{r}
+aparc_bic <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+cat('Nuestros datos tienen', nrow(aparc_bic), ' estancias y ', ncol(aparc_bic), 'variables.')
+```
+
+ya decía yo...
+
+Ahora vamos a descargar los ValenBisi, EMT, FGV y población por barrios.
+
+```{r}
+valenbisi <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+cat('Los datos de ValenBisi tienen', nrow(valenbisi), ' estancias y ', ncol(valenbisi), 'variables. \n')
+
+
+emt <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+cat('Los datos de EMT tienen', nrow(emt), ' estancias y ', ncol(emt), 'variables.\n')
+
+
+fgv <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+cat('Los datos de FGV tienen', nrow(fgv), ' estancias y ', ncol(fgv), 'variables.\n')
+
+```
+
+Como queremos ver si existe alguna relación entre densidad demográfica y
+aparcamientos de bicicletas y otros medios de transporte, cargamos
+tambien datos poblacionales.
+
+
+
+Notamos que en la sección de *Datos Demográficos* del portal de datos
+abiertos <https://opendata.vlci.valencia.es/> está vacío. Vemos que existe un conjuntos de datos llamado _Manzanas catastrales con datos de población_, así que los cargamos\_\_
+
+```{r}
+pob_mal <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=%2A&f=geojson', quiet = TRUE)
+
+cat('Los datos de población tienen', nrow(pob_mal), ' estancias y ', ncol(pob_mal), 'variables.\n')
+
+names(pob_mal)
+```
+
+Pero vemos que no hay datos de población. Por tanto tendremos que buscar otras fuentes. 
+```{r}
+url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"
+carpeta_datos <- "data"
+entrada <- file.path(carpeta_datos, "Barrios2026.zip")
+salida  <- "densidad_barrios_2025.csv"
+```
+
+Mediante inspección, vemos que el zip contiene la información de los 88 barrios de Valencia. Como es muy complicado automatizar esta recolección de datos de cada uno de los xlsx, utilizamos ayuda de _Claude_ para extraer esa información.
+```{r Claude information extraction, echo=FALSE, message=TRUE}
+# --- Descargar el zip si no está en data/ -----------------------------------
+dir.create(carpeta_datos, showWarnings = FALSE, recursive = TRUE)
+
+if (file.exists(entrada)) {
+  message("Usando el zip ya descargado: ", entrada)
+} else {
+  message("Descargando ", url_descarga)
+  options(timeout = max(300, getOption("timeout")))  # el zip pesa ~20 MB
+  download.file(url_descarga, destfile = entrada, mode = "wb")  # "wb" evita corromper el zip en Windows
+}
+
+# --- Localizar los archivos -------------------------------------------------
+if (grepl("\\.zip$", entrada, ignore.case = TRUE)) {
+  carpeta <- file.path(tempdir(), "barrios")
+  unzip(entrada, exdir = carpeta)
+} else {
+  carpeta <- entrada
+}
+
+archivos <- list.files(carpeta, pattern = "^Distrito_\\d+_Barrio_\\d+\\.xlsx$",
+                       full.names = TRUE)
+if (length(archivos) == 0) stop("No se encontraron archivos .xlsx en ", carpeta)
+
+# --- Función de extracción --------------------------------------------------
+# En lugar de usar una celda fija (C18), se busca la cabecera
+# "Densidad de población" y se toma el valor de la celda inmediatamente
+# inferior. Las columnas de personas y superficie están justo a la izquierda.
+extraer_densidad <- function(ruta) {
+  hoja <- read_excel(ruta, sheet = "Padron", col_names = FALSE,
+                     col_types = "list", .name_repair = "minimal")
+
+  valor <- function(f, c) {
+    if (f > nrow(hoja) || c < 1 || c > ncol(hoja)) return(NA_real_)
+    v <- hoja[[c]][[f]]
+    if (is.null(v) || length(v) == 0) NA_real_ else suppressWarnings(as.numeric(v))
+  }
+
+  # Nombre del barrio a partir del título (celda A1),
+  # p. ej. "1. Padrón a 01/01/2025 . Barrio 1.1. la Seu"
+  titulo <- as.character(hoja[[1]][[1]])
+  nombre <- sub(".*Barrio\\s+\\d+\\.\\d+\\.\\s*", "", titulo)
+
+  num <- as.integer(regmatches(basename(ruta),
+                               gregexpr("\\d+", basename(ruta)))[[1]])
+
+  # Buscar la cabecera de densidad
+  pos <- NULL
+  for (c in seq_along(hoja)) {
+    textos <- vapply(hoja[[c]], function(x) if (is.character(x)) x else NA_character_,
+                     character(1))
+    f <- which(grepl("^\\s*Densidad de poblaci", textos))
+    if (length(f) > 0) { pos <- c(f[1], c); break }
+  }
+
+  if (is.null(pos)) {
+    densidad <- personas <- superficie <- NA_real_
+    warning("No se encontró la cabecera de densidad en ", basename(ruta))
+  } else {
+    densidad   <- valor(pos[1] + 1, pos[2])
+    superficie <- valor(pos[1] + 1, pos[2] - 1)
+    personas   <- valor(pos[1] + 1, pos[2] - 2)
+  }
+
+  data.frame(
+    distrito       = num[1],
+    barrio         = num[2],
+    nombre_barrio  = nombre,
+    personas       = personas,
+    superficie_ha  = superficie,
+    densidad_hab_ha = densidad,
+    stringsAsFactors = FALSE
+  )
+}
+
+# --- Ejecutar ---------------------------------------------------------------
+pob <- do.call(rbind, lapply(archivos, extraer_densidad))
+pob <- pob[order(pob$distrito, pob$barrio), ]
+rownames(pob) <- NULL
+
+head(pob)
+
+sin_dato <- pob$archivo[is.na(pob$densidad_hab_ha)]
+if (length(sin_dato) > 0) {
+  message("Archivos sin dato de densidad: ", paste(sin_dato, collapse = ", "))
+}
+
+write.csv(pob, salida, row.names = FALSE, fileEncoding = "UTF-8")
+message("Guardado en: ", normalizePath(salida))
+
+```
+
+
+
+
+
+```{r}
+barrios <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+cat('Los datos de barrios tienen', nrow(barrios), ' estancias y ', ncol(barrios), 'variables.\n')
+head(barrios)
+
+distritos <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+cat('Los datos de distritos tienen', nrow(distritos), ' estancias y ', ncol(distritos), 'variables.\n')
+head(distritos)
+
+```
 
 # Results
 
@@ -452,3 +710,9 @@ discussion is unusually long or complex.
 
 This section is not mandatory, but may be added if there are patents
 resulting from the work reported in this manuscript.
+
+# Anexo: Información de la sesión
+
+```{r session-info}
+sessionInfo()
+```

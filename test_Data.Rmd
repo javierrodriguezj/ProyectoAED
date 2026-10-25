@@ -1,0 +1,38 @@
+---
+title: "test_data"
+author: "Javier Rodríguez"
+date: "2026-10-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+
+url_test <- "https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson"
+
+# 1. Comprobar código de estado HTTP
+req <- request(url_test)
+resp <- req_perform(req)
+
+status <- resp_status(resp)
+cat("Código de estado HTTP:", status, "\n")
+
+# 2. Si responde 200 (OK), comprobar lectura directa con sf
+if (status == 200) {
+  tryCatch({
+    test_data <- st_read(url_test, quiet = TRUE)
+    cat("¡Enlace funcional!\n")
+    cat("Registros encontrados:", nrow(test_data), "\n")
+    cat("Columnas:", ncol(test_data), "\n")
+  }, error = function(e) {
+    cat("Error al parsear como GeoJSON:", conditionMessage(e), "\n")
+  })
+} else {
+  cat("El servidor no respondió correctamente (Código:", status, ")\n")
+}
+```
+
