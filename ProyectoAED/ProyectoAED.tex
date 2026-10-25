@@ -689,10 +689,6 @@ extraer esa información.
 ## 6        1      6 Sant Francesc     6133        43.866        139.8122
 \end{verbatim}
 
-\begin{verbatim}
-## Guardado en: /Users/javier/Documents/MCD/AED/ProyectoAED/ProyectoAED/densidad_barrios_2025.csv
-\end{verbatim}
-
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{barrios }\OtherTok{\textless{}{-}} \FunctionTok{st\_read}\NormalTok{(}\AttributeTok{dsn =} \StringTok{\textquotesingle{}https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1\&outFields=*\&f=geojson\textquotesingle{}}\NormalTok{, }\AttributeTok{quiet =} \ConstantTok{TRUE}\NormalTok{)}
@@ -772,6 +768,108 @@ extraer esa información.
 ## 5 POLYGON ((-0.3833952 39.481...
 ## 6 POLYGON ((-0.3645362 39.471...
 \end{verbatim}
+
+Ahora por último, lo juntamos todo en un mismo DataFrame (polígonos de
+distritos, barrios y densidad de población)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# {-}{-}{-} 1. Polígonos de barrio {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\CommentTok{\# Cruce por código de distrito + código de barrio (codbarrio se repite entre}
+\CommentTok{\# distritos, así que hacen falta los dos).}
+\NormalTok{poligonos\_barrios }\OtherTok{\textless{}{-}}\NormalTok{ barrios }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{coddistrit =} \FunctionTok{as.integer}\NormalTok{(coddistrit),}
+         \AttributeTok{codbarrio  =} \FunctionTok{as.integer}\NormalTok{(codbarrio)) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{select}\NormalTok{(coddistrit, codbarrio, }\AttributeTok{nombre\_geo =}\NormalTok{ nombre)}
+
+\NormalTok{resultado }\OtherTok{\textless{}{-}}\NormalTok{ resultado }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{left\_join}\NormalTok{(poligonos\_barrios,}
+            \AttributeTok{by =} \FunctionTok{c}\NormalTok{(}\StringTok{"distrito"} \OtherTok{=} \StringTok{"coddistrit"}\NormalTok{, }\StringTok{"barrio"} \OtherTok{=} \StringTok{"codbarrio"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{st\_as\_sf}\NormalTok{()}
+
+\FunctionTok{st\_geometry}\NormalTok{(resultado) }\OtherTok{\textless{}{-}} \StringTok{"geom\_barrio"}   \CommentTok{\# nombre claro para la geometría activa}
+
+
+\NormalTok{distritos\_unidos }\OtherTok{\textless{}{-}}\NormalTok{ distritos }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{st\_make\_valid}\NormalTok{() }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{coddistrit =} \FunctionTok{as.integer}\NormalTok{(coddistrit)) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{group\_by}\NormalTok{(coddistrit) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{summarise}\NormalTok{(}\AttributeTok{nombre\_distrito =} \FunctionTok{first}\NormalTok{(nombre), }\AttributeTok{.groups =} \StringTok{"drop"}\NormalTok{)  }\CommentTok{\# une las piezas}
+
+\NormalTok{fila }\OtherTok{\textless{}{-}} \FunctionTok{match}\NormalTok{(resultado}\SpecialCharTok{$}\NormalTok{distrito, distritos\_unidos}\SpecialCharTok{$}\NormalTok{coddistrit)}
+\NormalTok{resultado}\SpecialCharTok{$}\NormalTok{nombre\_distrito }\OtherTok{\textless{}{-}}\NormalTok{ distritos\_unidos}\SpecialCharTok{$}\NormalTok{nombre\_distrito[fila]}
+\NormalTok{resultado}\SpecialCharTok{$}\NormalTok{geom\_distrito   }\OtherTok{\textless{}{-}} \FunctionTok{st\_geometry}\NormalTok{(distritos\_unidos)[fila]   }\CommentTok{\# 2ª columna de geometría}
+
+\CommentTok{\# {-}{-}{-} 3. Densidad del distrito (población total / superficie total) {-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\CommentTok{\# El Port no tiene población pero su superficie cuenta en el distrito 11.}
+\NormalTok{resultado }\OtherTok{\textless{}{-}}\NormalTok{ resultado }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{group\_by}\NormalTok{(distrito) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{densidad\_distrito\_hab\_ha =} \FunctionTok{sum}\NormalTok{(personas, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{/}
+                                    \FunctionTok{sum}\NormalTok{(superficie\_ha, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{ungroup}\NormalTok{() }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{relocate}\NormalTok{(nombre\_distrito, }\AttributeTok{.after =}\NormalTok{ barrio)}
+
+\CommentTok{\# {-}{-}{-} Comprobaciones {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Barrios sin polígono de barrio:  "}\NormalTok{, }\FunctionTok{sum}\NormalTok{(}\FunctionTok{st\_is\_empty}\NormalTok{(resultado}\SpecialCharTok{$}\NormalTok{geom\_barrio)), }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Barrios sin polígono de barrio:   1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Barrios sin polígono de distrito:"}\NormalTok{, }\FunctionTok{sum}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(fila)), }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Barrios sin polígono de distrito: 0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(resultado)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Simple feature collection with 89 features and 9 fields
+## Active geometry column: geom_barrio (with 1 geometry empty)
+## Geometry type: POLYGON
+## Dimension:     XY
+## Bounding box:  xmin: -0.432535 ymin: 39.27893 xmax: -0.2753685 ymax: 39.56659
+## Geodetic CRS:  WGS 84
+## # A tibble: 89 x 11
+##    distrito barrio nombre_distrito nombre_barrio    personas superficie_ha
+##       <int>  <int> <chr>           <chr>               <dbl>         <dbl>
+##  1        1      1 CIUTAT VELLA    la Seu               3275          22.1
+##  2        1      2 CIUTAT VELLA    la Xerea             4277          31.2
+##  3        1      3 CIUTAT VELLA    el Carme             7252          38.4
+##  4        1      4 CIUTAT VELLA    el Pilar             5472          16.2
+##  5        1      5 CIUTAT VELLA    el Mercat            4101          17.3
+##  6        1      6 CIUTAT VELLA    Sant Francesc        6133          43.9
+##  7        2      1 L'EIXAMPLE      Russafa             25514          87.8
+##  8        2      2 L'EIXAMPLE      el Pla del Remei     7344          38.7
+##  9        2      3 L'EIXAMPLE      la Gran Via         12378          46.9
+## 10        3      1 EXTRAMURS       el Botànic           7033          37.0
+## # i 79 more rows
+## # i 5 more variables: densidad_hab_ha <dbl>, nombre_geo <chr>,
+## #   geom_barrio <POLYGON [°]>, geom_distrito <POLYGON [°]>,
+## #   densidad_distrito_hab_ha <dbl>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# {-}{-}{-} Mapa de comprobación: barrios coloreados, límites de distrito encima {-}{-}{-}}
+\FunctionTok{plot}\NormalTok{(resultado[}\StringTok{"densidad\_hab\_ha"}\NormalTok{], }\AttributeTok{main =} \StringTok{"Densidad por barrio (hab/ha)"}\NormalTok{,}
+     \AttributeTok{reset =} \ConstantTok{FALSE}\NormalTok{)}
+\FunctionTok{plot}\NormalTok{(}\FunctionTok{st\_geometry}\NormalTok{(distritos\_unidos), }\AttributeTok{add =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{border =} \StringTok{"black"}\NormalTok{, }\AttributeTok{lwd =} \DecValTok{2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{ProyectoAED_files/figure-latex/unnamed-chunk-9-1.pdf}}
 
 \section{Results}\label{results}
 
@@ -972,17 +1070,18 @@ sesión}\label{anexo-informaciuxf3n-de-la-sesiuxf3n}
 ## [13] sf_1.1-3       
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] generics_0.1.4     class_7.3-23       KernSmooth_2.23-26 stringi_1.8.9     
-##  [5] hms_1.1.4          digest_0.6.39      magrittr_2.0.5     evaluate_1.0.5    
-##  [9] grid_4.6.1         timechange_0.4.0   RColorBrewer_1.1-3 fastmap_1.2.0     
-## [13] cellranger_1.1.0   e1071_1.7-17       DBI_1.3.0          scales_1.4.0      
-## [17] cli_3.6.6          rlang_1.3.0        units_1.0-1        withr_3.0.3       
-## [21] yaml_2.3.12        otel_0.2.0         tools_4.6.1        tzdb_0.5.0        
-## [25] vctrs_0.7.3        R6_2.6.1           proxy_0.4-29       lifecycle_1.0.5   
-## [29] classInt_0.4-11    rticles_0.27       pkgconfig_2.0.3    pillar_1.11.1     
-## [33] gtable_0.3.6       glue_1.8.1         Rcpp_1.1.2         xfun_0.61         
-## [37] tidyselect_1.2.1   rstudioapi_0.19.0  farver_2.1.2       htmltools_0.5.9   
-## [41] rmarkdown_2.32     compiler_4.6.1     S7_0.2.2
+##  [1] s2_1.1.13          utf8_1.2.6         generics_0.1.4     class_7.3-23      
+##  [5] KernSmooth_2.23-26 stringi_1.8.9      hms_1.1.4          digest_0.6.39     
+##  [9] magrittr_2.0.5     evaluate_1.0.5     grid_4.6.1         timechange_0.4.0  
+## [13] RColorBrewer_1.1-3 fastmap_1.2.0      cellranger_1.1.0   e1071_1.7-17      
+## [17] DBI_1.3.0          scales_1.4.0       cli_3.6.6          rlang_1.3.0       
+## [21] units_1.0-1        withr_3.0.3        yaml_2.3.12        otel_0.2.0        
+## [25] tools_4.6.1        tzdb_0.5.0         vctrs_0.7.3        R6_2.6.1          
+## [29] proxy_0.4-29       lifecycle_1.0.5    classInt_0.4-11    rticles_0.27      
+## [33] pkgconfig_2.0.3    pillar_1.11.1      gtable_0.3.6       glue_1.8.1        
+## [37] Rcpp_1.1.2         xfun_0.61          tidyselect_1.2.1   rstudioapi_0.19.0 
+## [41] farver_2.1.2       htmltools_0.5.9    rmarkdown_2.32     wk_0.9.5          
+## [45] compiler_4.6.1     S7_0.2.2
 \end{verbatim}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -35,4 +35,107 @@ if (status == 200) {
   cat("El servidor no respondió correctamente (Código:", status, ")\n")
 }
 ```
+```{r}
+# ---------------------------------------------------------------------------
+# Extrae la densidad de población (tabla 1.2 de la hoja "Padron") de cada
+# archivo Distrito_X_Barrio_Y.xlsx y la guarda en un CSV.
+#
+# Requiere: readxl  ->  install.packages("readxl")
+# ---------------------------------------------------------------------------
+
+library(readxl)
+
+# --- Configuración ----------------------------------------------------------
+url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"
+
+# Puede ser el .zip original o una carpeta con los .xlsx ya descomprimidos
+entrada <- "Barrios2026.zip"
+salida  <- "densidad_barrios_2025.csv"
+
+# --- Descargar el zip si no está en local -----------------------------------
+if (!file.exists(entrada)) {
+  message("Descargando ", url_descarga)
+  options(timeout = max(300, getOption("timeout")))  # el zip pesa ~20 MB
+  download.file(url_descarga, destfile = entrada, mode = "wb")  # "wb" evita corromper el zip en Windows
+}
+
+# --- Localizar los archivos -------------------------------------------------
+if (grepl("\\.zip$", entrada, ignore.case = TRUE)) {
+  carpeta <- file.path(tempdir(), "barrios")
+  unzip(entrada, exdir = carpeta)
+} else {
+  carpeta <- entrada
+}
+
+archivos <- list.files(carpeta, pattern = "^Distrito_\\d+_Barrio_\\d+\\.xlsx$",
+                       full.names = TRUE)
+if (length(archivos) == 0) stop("No se encontraron archivos .xlsx en ", carpeta)
+
+# --- Función de extracción --------------------------------------------------
+# En lugar de usar una celda fija (C18), se busca la cabecera
+# "Densidad de población" y se toma el valor de la celda inmediatamente
+# inferior. Las columnas de personas y superficie están justo a la izquierda.
+extraer_densidad <- function(ruta) {
+  hoja <- read_excel(ruta, sheet = "Padron", col_names = FALSE,
+                     col_types = "list", .name_repair = "minimal")
+
+  valor <- function(f, c) {
+    if (f > nrow(hoja) || c < 1 || c > ncol(hoja)) return(NA_real_)
+    v <- hoja[[c]][[f]]
+    if (is.null(v) || length(v) == 0) NA_real_ else suppressWarnings(as.numeric(v))
+  }
+
+  # Nombre del barrio a partir del título (celda A1),
+  # p. ej. "1. Padrón a 01/01/2025 . Barrio 1.1. la Seu"
+  titulo <- as.character(hoja[[1]][[1]])
+  nombre <- sub(".*Barrio\\s+\\d+\\.\\d+\\.\\s*", "", titulo)
+
+  num <- as.integer(regmatches(basename(ruta),
+                               gregexpr("\\d+", basename(ruta)))[[1]])
+
+  # Buscar la cabecera de densidad
+  pos <- NULL
+  for (c in seq_along(hoja)) {
+    textos <- vapply(hoja[[c]], function(x) if (is.character(x)) x else NA_character_,
+                     character(1))
+    f <- which(grepl("^\\s*Densidad de poblaci", textos))
+    if (length(f) > 0) { pos <- c(f[1], c); break }
+  }
+
+  if (is.null(pos)) {
+    densidad <- personas <- superficie <- NA_real_
+    warning("No se encontró la cabecera de densidad en ", basename(ruta))
+  } else {
+    densidad   <- valor(pos[1] + 1, pos[2])
+    superficie <- valor(pos[1] + 1, pos[2] - 1)
+    personas   <- valor(pos[1] + 1, pos[2] - 2)
+  }
+
+  data.frame(
+    archivo        = basename(ruta),
+    distrito       = num[1],
+    barrio         = num[2],
+    nombre_barrio  = nombre,
+    personas       = personas,
+    superficie_ha  = superficie,
+    densidad_hab_ha = densidad,
+    stringsAsFactors = FALSE
+  )
+}
+
+# --- Ejecutar ---------------------------------------------------------------
+resultado <- do.call(rbind, lapply(archivos, extraer_densidad))
+resultado <- resultado[order(resultado$distrito, resultado$barrio), ]
+rownames(resultado) <- NULL
+
+print(resultado)
+
+sin_dato <- resultado$archivo[is.na(resultado$densidad_hab_ha)]
+if (length(sin_dato) > 0) {
+  message("Archivos sin dato de densidad: ", paste(sin_dato, collapse = ", "))
+}
+
+write.csv(resultado, salida, row.names = FALSE, fileEncoding = "UTF-8")
+message("Guardado en: ", normalizePath(salida))
+```
 

@@ -537,19 +537,19 @@ extraer_densidad <- function(ruta) {
 }
 
 # --- Ejecutar ---------------------------------------------------------------
-pob <- do.call(rbind, lapply(archivos, extraer_densidad))
-pob <- pob[order(pob$distrito, pob$barrio), ]
-rownames(pob) <- NULL
+resultado <- do.call(rbind, lapply(archivos, extraer_densidad))
+resultado <- resultado[order(resultado$distrito, resultado$barrio), ]
+rownames(resultado) <- NULL
 
-head(pob)
+head(resultado)
 
-sin_dato <- pob$archivo[is.na(pob$densidad_hab_ha)]
+sin_dato <- resultado$archivo[is.na(resultado$densidad_hab_ha)]
 if (length(sin_dato) > 0) {
   message("Archivos sin dato de densidad: ", paste(sin_dato, collapse = ", "))
 }
 
-write.csv(pob, salida, row.names = FALSE, fileEncoding = "UTF-8")
-message("Guardado en: ", normalizePath(salida))
+#write.csv(pob, salida, row.names = FALSE, fileEncoding = "UTF-8")
+#message("Guardado en: ", normalizePath(salida))
 
 ```
 
@@ -569,6 +569,51 @@ cat('Los datos de distritos tienen', nrow(distritos), ' estancias y ', ncol(dist
 head(distritos)
 
 ```
+Ahora por último, lo juntamos todo en un mismo DataFrame (polígonos de distritos, barrios y densidad de población)
+
+```{r}
+# --- 1. Polígonos de barrio -------------------------------------------------
+# Cruce por código de distrito + código de barrio (codbarrio se repite entre
+# distritos, así que hacen falta los dos).
+poligonos_barrios <- barrios |>
+  mutate(coddistrit = as.integer(coddistrit),
+         codbarrio  = as.integer(codbarrio)) |>
+  select(coddistrit, codbarrio, nombre_geo = nombre)
+
+resultado <- resultado |>
+  left_join(poligonos_barrios,
+            by = c("distrito" = "coddistrit", "barrio" = "codbarrio")) |>
+  st_as_sf()
+
+st_geometry(resultado) <- "geom_barrio"   # nombre claro para la geometría activa
+
+
+distritos_unidos <- distritos |>
+  st_make_valid() |>
+  mutate(coddistrit = as.integer(coddistrit)) |>
+  group_by(coddistrit) |>
+  summarise(nombre_distrito = first(nombre), .groups = "drop")  # une las piezas
+
+fila <- match(resultado$distrito, distritos_unidos$coddistrit)
+resultado$nombre_distrito <- distritos_unidos$nombre_distrito[fila]
+resultado$geom_distrito   <- st_geometry(distritos_unidos)[fila]   # 2ª columna de geometría
+
+# --- 3. Densidad del distrito (población total / superficie total) ---------
+# El Port no tiene población pero su superficie cuenta en el distrito 11.
+resultado <- resultado |>
+  group_by(distrito) |>
+  mutate(densidad_distrito_hab_ha = sum(personas, na.rm = TRUE) /
+                                    sum(superficie_ha, na.rm = TRUE)) |>
+  ungroup() |>
+  relocate(nombre_distrito, .after = barrio)
+
+# --- Comprobaciones ---------------------------------------------------------
+cat("Barrios sin polígono de barrio:  ", sum(st_is_empty(resultado$geom_barrio)), "\n")
+cat("Barrios sin polígono de distrito:", sum(is.na(fila)), "\n")
+print(resultado)
+
+```
+
 
 # Results
 
