@@ -39,3 +39,7 @@ Autores: Sara, Ángel, Javier
 En `pruebas/`, cada uno tiene su propio .Rmd donde podemos hacer nuestras pruebas y ponerlas en común, antes de escribir directamente sobre el documento final. Estos .Rmd no están estrictamente "bloqueados" a cada uno de nosotros; Ángel puede editar `javi.md` si lo ve necesario y a Javi le parece bien.
 
 De esta manera, evitaremos _merge conflicts_ innecesarios. También mantendremos un flujo de trabajo más limpio y ordenado.
+
+# Statement sobre el uso de IA
+
+NO MANDÉIS A VUESTROS COMPAÑEROS A LEER LA BULLSHIT QUE OS HA GENERADO LA IA. EL TIEMPO DE LOS DEMÁS ES TAN IMPORTANTE COMO EL VUESTRO.
