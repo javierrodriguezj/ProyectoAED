@@ -2,6 +2,10 @@
 
 Autores: Sara, Ángel, Javier
 
+# IMPORTANTE
+
+El documento que vamos a entregar es `./ReportFinal/ProyectoAED.Rmd`. Está dentro de una carpeta. A la hora de descargar y cargar los datos, HAY QUE TENERLO EN CUENTA. Por ejemplo, la ruta para descargar el código será '../data/' (los puntos '..' se mueven hacia atrás una carpeta).
+
 # Estructura del repositorio
 
 ```         
