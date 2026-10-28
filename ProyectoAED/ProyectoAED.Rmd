@@ -439,10 +439,10 @@ Como queremos ver si existe alguna relación entre densidad demográfica y
 aparcamientos de bicicletas y otros medios de transporte, cargamos
 tambien datos poblacionales.
 
-
-
 Notamos que en la sección de *Datos Demográficos* del portal de datos
-abiertos <https://opendata.vlci.valencia.es/> está vacío. Vemos que existe un conjuntos de datos llamado _Manzanas catastrales con datos de población_, así que los cargamos\_\_
+abiertos <https://opendata.vlci.valencia.es/> está vacío. Vemos que
+existe un conjuntos de datos llamado *Manzanas catastrales con datos de
+población*, así que los cargamos\_\_
 
 ```{r}
 pob_mal <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=%2A&f=geojson', quiet = TRUE)
@@ -452,7 +452,9 @@ cat('Los datos de población tienen', nrow(pob_mal), ' estancias y ', ncol(pob_m
 names(pob_mal)
 ```
 
-Pero vemos que no hay datos de población. Por tanto tendremos que buscar otras fuentes. 
+Pero vemos que no hay datos de población. Por tanto tendremos que buscar
+otras fuentes.
+
 ```{r}
 url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"
 carpeta_datos <- "data"
@@ -460,7 +462,11 @@ entrada <- file.path(carpeta_datos, "Barrios2026.zip")
 salida  <- file.path(carpeta_datos,"densidad_barrios_2025.csv")
 ```
 
-Mediante inspección, vemos que el zip contiene la información de los 88 barrios de Valencia. Como es muy complicado automatizar esta recolección de datos de cada uno de los xlsx, utilizamos ayuda de _Claude_ para extraer esa información.
+Mediante inspección, vemos que el zip contiene la información de los 88
+barrios de Valencia. Como es muy complicado automatizar esta recolección
+de datos de cada uno de los xlsx, utilizamos ayuda de *Claude* para
+extraer esa información.
+
 ```{r Claude extraccion de info, echo=FALSE, message=TRUE}
 # --- Descargar el zip si no está en data/ -----------------------------------
 dir.create(carpeta_datos, showWarnings = FALSE, recursive = TRUE)
@@ -553,10 +559,6 @@ if (length(sin_dato) > 0) {
 
 ```
 
-
-
-
-
 ```{r}
 barrios <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 
@@ -570,8 +572,10 @@ head(distritos)
 
 ```
 
-
-Ahora por último, lo juntamos todo en un mismo DataFrame (polígonos de distritos, barrios y densidad de población). Notamos que las variables del codigo de barrio y distrito del data frame _barrios_ son de tipo chr. Los transformamos
+Ahora por último, lo juntamos todo en un mismo DataFrame (polígonos de
+distritos, barrios y densidad de población). Notamos que las variables
+del codigo de barrio y distrito del data frame *barrios* son de tipo
+chr. Los transformamos
 
 ```{r}
 poligonos_barrios <- barrios |>
@@ -610,8 +614,54 @@ pob <- pob |>
   relocate(nombre_distrito, .after = barrio)
 
 
+
 ```
 
+## Gráficas densidad poblacion y paradas valenbisi
+(hay que ponerlas un poco mejor y mas ajustadas)
+
+```{r}
+library(ggplot2)
+
+ggplot(pob) +
+  geom_sf(aes(fill = densidad_hab_ha)) +
+  scale_fill_viridis_c() +
+  theme_minimal() +
+  labs(
+    title = "Densidad de población por barrios de Valencia",
+    fill = "Habitantes/ha"
+  )
+
+ggplot(pob) +
+  geom_sf(aes(fill = densidad_hab_ha)) +
+  coord_sf(
+    xlim = c(-0.43, -0.31),
+    ylim = c(39.42, 39.53)
+  ) +  scale_fill_gradient(
+    low = "green",
+    high = "darkblue"
+  )
+  theme_minimal() +
+  labs(
+    title = "Densidad de población en el centro de Valencia",
+    fill = "Habitantes/ha"
+  )
+
+ggplot() +
+  geom_sf(data = pob, aes(fill = densidad_hab_ha)) +coord_sf(
+    xlim = c(-0.43, -0.31),
+    ylim = c(39.42, 39.53),
+    expand = FALSE
+  ) +   scale_fill_gradient(
+    low = "green",
+    high = "darkblue"
+  ) +
+  geom_sf(data = valenbisi, color = "red", size = 1) +
+  theme_minimal() +
+  labs(
+    title = "Densidad de población y estaciones ValenBisi"
+  )
+```
 
 # Results
 
