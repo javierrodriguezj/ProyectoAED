@@ -114,4 +114,32 @@ output:
     extra_dependencies: longtable
 ---
 
-Test
+# Descarga de los datos (_Raw data_)
+
+```{r}
+url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"
+
+savedir <- '../data/'
+filepath <- paste0(savedir, 'Barrios2026.zip')
+if (!file.exists(savedir)) dir.create(savedir)
+if (!file.exists(filepath)) {
+  message("Descargando ", url_descarga)
+  options(timeout = max(300, getOption("timeout")))  # el zip pesa ~20 MB
+  download.file(url_descarga, destfile = filepath, mode = "wb")  # "wb" evita corromper el zip en Windows
+}
+```
+
+
+# Limpieza de datos
+
+## _Technically correct data_
+
+Aquí importamos y adaptamos los datos a los formatos que maneja R...
+
+## _Consistent data_
+
+Aquí decidimos qué hacer con los datos raretes...
+
+# Análisis
+
+Aquí empezaría nuestro análisis como tal...
