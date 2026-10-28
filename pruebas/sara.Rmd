@@ -3,3 +3,48 @@ title: "sara"
 output: html_document
 ---
 
+## Gráficas densidad poblacion y paradas valenbisi
+(hay que ponerlas un poco mejor y mas ajustadas)
+
+```{r}
+library(ggplot2)
+
+ggplot(pob) +
+  geom_sf(aes(fill = densidad_hab_ha)) +
+  scale_fill_viridis_c() +
+  theme_minimal() +
+  labs(
+    title = "Densidad de población por barrios de Valencia",
+    fill = "Habitantes/ha"
+  )
+
+ggplot(pob) +
+  geom_sf(aes(fill = densidad_hab_ha)) +
+  coord_sf(
+    xlim = c(-0.43, -0.31),
+    ylim = c(39.42, 39.53)
+  ) +  scale_fill_gradient(
+    low = "green",
+    high = "darkblue"
+  )
+  theme_minimal() +
+  labs(
+    title = "Densidad de población en el centro de Valencia",
+    fill = "Habitantes/ha"
+  )
+
+ggplot() +
+  geom_sf(data = pob, aes(fill = densidad_hab_ha)) +coord_sf(
+    xlim = c(-0.43, -0.31),
+    ylim = c(39.42, 39.53),
+    expand = FALSE
+  ) +   scale_fill_gradient(
+    low = "green",
+    high = "darkblue"
+  ) +
+  geom_sf(data = valenbisi, color = "red", size = 1) +
+  theme_minimal() +
+  labs(
+    title = "Densidad de población y estaciones ValenBisi"
+  )
+```
