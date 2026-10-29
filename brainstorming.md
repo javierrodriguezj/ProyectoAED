@@ -15,3 +15,12 @@
     • ¿Se correlaciona la densidad de aparcamientos con la renta media o la densidad poblacional? Verificar si los barrios con mayor densidad residencial o menor renta disponen de una proporción equivalente de infraestructura ciclista frente al centro histórico y zonas turísticas/comerciales.
 
 5.  Puntos de Interés (Equipamientos Públicos) • ¿Tienen los centros educativos (universidades, institutos) y centros sanitarios suficiente cobertura de plazas? Medir la concentración de plazas disponibles en un radio de 200 m de campus universitarios (Tarongers, Blasco Ibáñez, Burjassot/UPV) y hospitales frente a zonas puramente residenciales.
+
+# URL's
+
+- EMT: <https://opendata.vlci.valencia.es/dataset/emt>
+- FGV (estaciones): <https://opendata.vlci.valencia.es/dataset/fgv-estacions-estaciones>
+- FGV (bocas): <https://opendata.vlci.valencia.es/dataset/fgv-bocas>
+- Parking bicis: <https://opendata.vlci.valencia.es/dataset/aparcaments-bicicletes-aparcamientos-bicicletas>
+- Valenbisi: <https://opendata.vlci.valencia.es/dataset/valenbisi-disponibilitat-valenbisi-dsiponibilidad>
+- Población + otros muchos datos: <https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip>
