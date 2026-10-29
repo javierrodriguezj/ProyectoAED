@@ -6,12 +6,13 @@ editor_options:
     wrap: 72
 ---
 
-### Javi:
+# Descarga de datos:
 
 Cargamos las bibliotecas que vamos viendo que hagan falta
 
 ```{r include=FALSE}
 rm(list = ls()) #borramos environment para empezar de 0 y no tener   variables residuales
+savedir <- '../data/'
 ```
 
 ```{r}
@@ -20,21 +21,28 @@ library(sf)
 
 ## Luego vamos cambiando el texto, voy a ir cargando los datos
 
-Descargamos y leemos los datos
+Descargamos y leemos los datos (yo dejaría esto a modo de 'anécdota').
 
-```{r JAVI SE ENCARGA}
+```{r Carga parking bici}
 download.file(url = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', destfile = '../data/aparcaments_bic.geojson', quiet = TRUE)
 
 aparc_bic1 <- read_sf("../data/aparcaments_bic.geojson")
-cat('Nuestros datos tienen', nrow(aparc_bic), ' instancias y ', ncol(aparc_bic), 'variables.')
+cat('Nuestros datos tienen', nrow(aparc_bic1), ' instancias y ', ncol(aparc_bic1), 'variables.')
 ```
 
 Es extraño, que el Ajuntament haya decidido poner *exactamente* 2000
 aparcamientos de bicicletas. Vamos a comprobar otra forma de leer los
 datos (me la encontré por los interneses)
 
-```{r JAVI SE ENCARGA}
+```{r Carga de bici 2.0}
 aparc_bic <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+
+
+filepath <- paste0(savedir, 'aparcamiento_bici.geojson')
+if (!file.exists(filepath)) {
+  st_write(aparc_bic, filepath, delete_dsn = TRUE)
+}
 
 cat('Nuestros datos tienen', nrow(aparc_bic), ' instancias y ', ncol(aparc_bic), 'variables.')
 ```
@@ -43,18 +51,37 @@ ya decía yo...
 
 Ahora vamos a descargar los ValenBisi, EMT, FGV y población por barrios.
 
-```{r}
+```{r Carga Valenbisi}
 valenbisi <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 
+filepath <- paste0(savedir, 'valenbisi.geojson')
+if (!file.exists(filepath)) {
+  st_write(valenbisi, filepath, delete_dsn = TRUE)
+}
+
 cat('Los datos de ValenBisi tienen', nrow(valenbisi), ' estancias y ', ncol(valenbisi), 'variables. \n')
+```
 
 
+```{r Carga emt}
 emt <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 
+filepath <- paste0(savedir, 'emt.geojson')
+if (!file.exists(filepath)) {
+  st_write(emt, filepath, delete_dsn = TRUE)
+}
+
 cat('Los datos de EMT tienen', nrow(emt), ' estancias y ', ncol(emt), 'variables.\n')
+```
 
 
+```{r Carga fgv}
 fgv <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+filepath <- paste0(savedir, 'fgv_paradas.geojson')
+if (!file.exists(filepath)) {
+  st_write(fgv, filepath, delete_dsn = TRUE)
+}
 
 cat('Los datos de FGV tienen', nrow(fgv), ' estancias y ', ncol(fgv), 'variables.\n')
 
@@ -75,6 +102,20 @@ pob_mal <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPE
 cat('Los datos de población tienen', nrow(pob_mal), ' estancias y ', ncol(pob_mal), 'variables.\n')
 
 names(pob_mal)
+```
+
+
+```{r Carga Vulnerabilidad}
+
+vulnerab <- st_read(dsn = 'https://opendata.vlci.valencia.es/dataset/ca18278b-d040-4274-b9c7-c1a9daae54b9/resource/fd2ca0dc-5344-4aad-8934-2077a0bb120d/download/vulnerabilidad-por-barrios.geojson', quiet = TRUE)
+
+filepath <- paste0(savedir, 'vulnerab_eco.geojson')
+if (!file.exists(filepath)) {
+  st_write(vulnerab, filepath, delete_dsn = TRUE)
+}
+
+cat('Los datos de vulnerabilidad económica tienen', nrow(vulnerab), ' estancias y ', ncol(vulnerab), 'variables.\n')
+
 ```
 
 Pero vemos que no hay datos de población. Por tanto tendremos que buscar

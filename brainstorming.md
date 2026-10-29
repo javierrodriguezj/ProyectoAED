@@ -24,3 +24,4 @@
 - Parking bicis: <https://opendata.vlci.valencia.es/dataset/aparcaments-bicicletes-aparcamientos-bicicletas>
 - Valenbisi: <https://opendata.vlci.valencia.es/dataset/valenbisi-disponibilitat-valenbisi-dsiponibilidad>
 - Población + otros muchos datos: <https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip>
+- Vulnerabilidad socioeconómica : <https://opendata.vlci.valencia.es/dataset/vulnerabilidad-por-barrios>
