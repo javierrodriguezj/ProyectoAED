@@ -499,16 +499,17 @@ ggplot() +
   )
 ```
 
-# Aquí empiezo: 
+# Aquí empiezo:
+
 En primer lugar, se va a crear un DataFrame en el que cada fila corresponda a un distrito de Valencia y contenga la densidad de población junto con el número de paradas o estaciones disponibles de cada medio de transporte público.
 
-Para ello, debido a que los datos de población están disponibles a nivel de barrio, agrupamos la información para obtener una única densidad de población por cada zona. 
+Para ello, debido a que los datos de población están disponibles a nivel de barrio, agrupamos la información para obtener una única densidad de población por cada zona.
 
 ```{r}
 densidad_distrito <- pob %>% st_drop_geometry() %>% group_by(coddistrit,nombre_distrito) %>% summarise( densidad = first(densidad_distrito_hab_ha))
 ```
-Por otro lado, como los datos de transporte únicamente proporcionan la localización geográfica de sus estaciones o paradas, será necesario asociar cada punto al distrito correspondiente y posteriormente contabilizar el número de estaciones existentes en cada zona. Finalmente, toda esta información se unirá en una única tabla que permitirá analizar la relación entre densidad de población y oferta de transporte público.
 
+Por otro lado, como los datos de transporte únicamente proporcionan la localización geográfica de sus estaciones o paradas, será necesario asociar cada punto al distrito correspondiente y posteriormente contabilizar el número de estaciones existentes en cada zona. Finalmente, toda esta información se unirá en una única tabla que permitirá analizar la relación entre densidad de población y oferta de transporte público.
 
 ```{r}
 # Concretamos los distritos de cada parada o estación de transporte público
@@ -523,7 +524,6 @@ metro_n <- metro_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n
 valenbisi_n <- valenbisi_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n_valenbisi")
 
 #Finalmente, unimos estos datos obtenidos a la tabla que hemos creado anteriormente
-datos_transporte <- densidad_distrito %>% left_join(emt_count, by = "coddistrit") %>% left_join(metro_count, by = "coddistrit") %>% left_join(valenbisi_count, by = "coddistrit")
+datos_transporte <- densidad_distrito %>% left_join(emt_n, by = "coddistrit") %>% left_join(metro_n, by = "coddistrit") %>% left_join(valenbisi_n, by = "coddistrit")
 
 ```
-
