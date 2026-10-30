@@ -19,6 +19,7 @@ savedir <- '../data/'
 library(sf)
 library(readxl)
 library(dplyr)
+library(tidyr)
 ```
 
 ## Luego vamos cambiando el texto, voy a ir cargando los datos
@@ -279,3 +280,156 @@ pob <- pob |>
 write.csv(pob, salida, row.names = FALSE, fileEncoding = "UTF-8")
 
 ```
+
+
+```{r Carga Votos -> Claudeada del siglo}
+extraer_generales_2023 <- function(ruta) {
+  hoja <- read_excel(ruta, sheet = "Elecciones", col_names = FALSE,
+                     col_types = "list", .name_repair = "minimal")
+
+  texto <- function(f, c) {
+    if (is.na(f) || is.na(c) || f > nrow(hoja) || c > ncol(hoja)) return(NA_character_)
+    v <- hoja[[c]][[f]]
+    if (is.null(v) || length(v) == 0 || is.na(v[[1]])) NA_character_ else as.character(v)
+  }
+  valor <- function(f, c) suppressWarnings(as.numeric(texto(f, c)))
+
+  col_a <- vapply(seq_len(nrow(hoja)), function(f) texto(f, 1), character(1))
+  buscar <- function(patron, desde = 1) {
+    f <- which(grepl(patron, col_a) & seq_along(col_a) >= desde)
+    if (length(f) == 0) NA_integer_ else f[1]
+  }
+
+  num <- as.integer(regmatches(basename(ruta),
+                               gregexpr("\\d+", basename(ruta)))[[1]])
+
+  # --- 1. Bloque de Elecciones Generales 2023 (apartado 7.3) ----------------
+  ini <- buscar("^\\s*[0-9.]+\\s*Elecciones Generales 2023")
+  if (is.na(ini)) {
+    warning("No se encontró el bloque de Generales 2023 en ", basename(ruta))
+    return(NULL)
+  }
+
+  # --- 2. Participación: fila "Censo Electoral" y la de debajo --------------
+    f_part <- buscar("Censo\\s+Electoral", desde = ini)
+  if (is.na(f_part)) {
+    warning("Sin tabla de participación en ", basename(ruta)); return(NULL)
+  }
+  cabecera <- vapply(seq_len(ncol(hoja)), function(c) texto(f_part, c), character(1))
+  participacion <- setNames(
+    vapply(seq_len(ncol(hoja)), function(c) valor(f_part + 1, c), numeric(1)),
+    cabecera
+  )
+  participacion <- participacion[!is.na(names(participacion))]
+  # Busca la columna por una palabra clave sin tildes (evita líos de codificación)
+  part <- function(patron) {
+    i <- grep(patron, names(participacion), ignore.case = TRUE)
+    if (length(i) == 0) NA_real_ else unname(participacion[i[1]])
+  }
+
+  # --- 3. Votos a candidaturas: desde "Votos a candidaturas" hasta "Fuente" -
+    f_cand <- buscar("Votos a candidaturas", desde = ini)
+  if (is.na(f_cand)) {
+    warning("Sin tabla de candidaturas en ", basename(ruta)); return(NULL)
+  }
+  f_fin  <- buscar("^\\s*Fuente", desde = f_cand)
+  if (is.na(f_fin)) f_fin <- nrow(hoja) + 1
+  filas  <- (f_cand + 1):(f_fin - 1)
+  filas  <- filas[!is.na(col_a[filas]) &
+                  !is.na(vapply(filas, function(f) valor(f, 2), numeric(1)))]
+  # (la línea en valenciano "Vots a candidatures..." no tiene número en B y se descarta)
+
+  data.frame(
+    distrito      = num[1],
+    barrio        = num[2],
+    censo         = part("^Censo"),
+    votos_total   = part("votos total"),
+    votos_blanco  = part("blanco"),
+    votos_nulos   = part("nulos"),
+    votos_cand    = part("Candidaturas"),
+    abstencion    = part("^Abstenci"),
+    partido       = trimws(col_a[filas]),
+    votos         = vapply(filas, function(f) valor(f, 2), numeric(1)),
+    stringsAsFactors = FALSE
+  )
+}
+
+# --- Ejecutar ---------------------------------------------------------------
+elecc_largo <- do.call(rbind, lapply(archivos, extraer_generales_2023))
+
+# Comprobación: la suma de partidos debe coincidir con "Votos a Candidaturas"
+descuadre <- elecc_largo |>
+  group_by(distrito, barrio) |>
+  summarise(dif = sum(votos) - first(votos_cand), .groups = "drop") |>
+  filter(dif != 0)
+if (nrow(descuadre) > 0) warning("Barrios con votos que no cuadran:\n",
+                                 paste(capture.output(print(descuadre)), collapse = "\n"))
+
+# Siglas para no tener columnas con espacios y tildes
+elecc_largo <- elecc_largo |>
+  mutate(siglas = case_when(
+    grepl("POPULAR",    partido) ~ "pp",
+    grepl("SOCIALISTA", partido) ~ "psoe",
+    grepl("^VOX",       partido) ~ "vox",
+    grepl("SUMAR",      partido) ~ "sumar",
+    TRUE                         ~ "otros"
+  ))
+
+# Formato ancho: una fila por barrio y una columna por partido (votos y %)
+elecc_gen23 <- elecc_largo |>
+  select(-partido) |>
+  pivot_wider(names_from = siglas, values_from = votos,
+              values_fn = sum, values_fill = 0) |>        # 'otros' suma los minoritarios
+  mutate(participacion_pct = 100 * votos_total / censo,
+         across(c(pp, psoe, vox, sumar, otros),
+                ~ 100 * .x / votos_total, .names = "{.col}_pct")) |>   # % sobre votos emitidos
+  arrange(distrito, barrio)
+
+head(elecc_gen23)
+cat('Los datos electorales tienen', nrow(elecc_gen23), ' estancias y ', ncol(elecc_gen23),
+    'variables. Además, hay ', sum(is.na(elecc_gen23)), 'NA\'s')
+```
+```{r}
+# Guardamos en un objeto nuevo para poder re-ejecutar el chunk sin romper 'pob'
+
+# 1. Votos por barrio ---------------------------------------------------------
+pob_elecc <- pob |>
+  left_join(elecc_gen23 |> select(-votos_cand),
+            by = c("coddistrit" = "distrito", "codbarrio" = "barrio"))
+
+# 2. Votos por distrito -------------------------------------------------------
+# Se suman los votos de los barrios y los % se recalculan a partir de esas sumas
+# (no se promedian los % de los barrios, que daría el mismo peso a Mauella que a Russafa)
+pob_elecc <- pob_elecc |>
+  group_by(coddistrit) |>
+  mutate(
+    censo_distrito       = sum(censo,       na.rm = TRUE),
+    votos_total_distrito = sum(votos_total, na.rm = TRUE),
+    across(c(pp, psoe, vox, sumar, otros),
+           ~ 100 * sum(.x, na.rm = TRUE) / votos_total_distrito,
+           .names = "{.col}_pct_distrito"),
+    participacion_pct_distrito = 100 * votos_total_distrito / censo_distrito
+  ) |>
+  ungroup()
+
+# 3. Comprobaciones ------------------------------------------------------------
+# Barrios sin datos electorales (esperados: El Port, Mauella, Faitanar)
+pob_elecc |>
+  st_drop_geometry() |>
+  filter(is.na(votos_total)) |>
+  select(coddistrit, codbarrio, nombre_geo, personas)
+
+# Barrios con votos que no han encontrado su polígono (debería salir vacío)
+anti_join(elecc_gen23, st_drop_geometry(pob),
+          by = c("distrito" = "coddistrit", "barrio" = "codbarrio"))
+
+cat('El data frame final tiene', nrow(pob_elecc), ' estancias y ', ncol(pob_elecc), 'variables.')
+
+filepath <- paste0(savedir, 'pob_elecciones.geojson')
+if (!file.exists(filepath)) {
+  st_write(pob_elecc, filepath, delete_dsn = TRUE)
+}
+
+```
+
+
