@@ -3,7 +3,457 @@ title: "sara"
 output: html_document
 ---
 
+# Descarga de datos:
+
+Cargamos las bibliotecas que vamos viendo que hagan falta
+
+```{r include=FALSE}
+rm(list = ls()) #borramos environment para empezar de 0 y no tener   variables residuales
+savedir <- '../data/'
+```
+
+```{r}
+library(sf)
+library(readxl)
+library(dplyr)
+library(tidyr)
+```
+
+## Luego vamos cambiando el texto, voy a ir cargando los datos
+
+Descargamos y leemos los datos (yo dejaría esto a modo de 'anécdota').
+
+```{r Carga parking bici}
+# download.file(url = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', destfile = '../data/aparcaments_bic_CORTADO.geojson', quiet = TRUE)
+# 
+# aparc_bic1 <- read_sf("../data/aparcaments_bic_CORTADO.geojson")
+# cat('Nuestros datos tienen', nrow(aparc_bic1), ' instancias y ', ncol(aparc_bic1), 'variables. Además, hay ', sum(is.na(aparc_bic1)),'NA\'s')
+```
+
+Es extraño, que el Ajuntament haya decidido poner *exactamente* 2000 aparcamientos de bicicletas. Vamos a comprobar otra forma de leer los datos (me la encontré por los interneses)
+
+```{r Carga de bici 2.0}
+aparc_bic <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+
+
+filepath <- paste0(savedir, 'aparcamiento_bici.geojson')
+if (!file.exists(filepath)) {
+  st_write(aparc_bic, filepath, delete_dsn = TRUE)
+}
+
+cat('Nuestros datos tienen', nrow(aparc_bic), ' instancias y ', ncol(aparc_bic), 'variables. Además, hay ', sum(is.na(aparc_bic)),'NA\'s')
+```
+
+ya decía yo...
+
+Ahora vamos a descargar los ValenBisi, EMT, FGV y población por barrios.
+
+```{r Carga Valenbisi}
+valenbisi <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+filepath <- paste0(savedir, 'valenbisi.geojson')
+if (!file.exists(filepath)) {
+  st_write(valenbisi, filepath, delete_dsn = TRUE)
+}
+
+cat('Los datos de ValenBisi tienen', nrow(valenbisi), ' estancias y ', ncol(valenbisi), 'variables. Además, hay ', sum(is.na(valenbisi)),'NA\'s')
+```
+
+```{r Carga emt}
+emt <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+filepath <- paste0(savedir, 'emt.geojson')
+if (!file.exists(filepath)) {
+  st_write(emt, filepath, delete_dsn = TRUE)
+}
+
+cat('Los datos de EMT tienen', nrow(emt), ' estancias y ', ncol(emt), 'variables. Además, hay ', sum(is.na(emt)),'NA\'s')
+```
+
+```{r Carga fgv}
+fgv <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+filepath <- paste0(savedir, 'fgv_paradas.geojson')
+if (!file.exists(filepath)) {
+  st_write(fgv, filepath, delete_dsn = TRUE)
+}
+
+cat('Los datos de FGV tienen', nrow(fgv), ' estancias y ', ncol(fgv), 'variables. Además, hay ', sum(is.na(fgv)),'NA\'s')
+
+```
+
+```{r Carga Vulnerabilidad}
+
+# vulnerab <- st_read(dsn = 'https://opendata.vlci.valencia.es/dataset/ca18278b-d040-4274-b9c7-c1a9daae54b9/resource/fd2ca0dc-5344-4aad-8934-2077a0bb120d/download/vulnerabilidad-por-barrios.geojson', quiet = TRUE)
+# 
+# filepath <- paste0(savedir, 'vulnerab_eco.geojson')
+# if (!file.exists(filepath)) {
+#   st_write(vulnerab, filepath, delete_dsn = TRUE)
+# }
+# 
+# cat('Los datos de vulnerabilidad económica tienen', nrow(vulnerab), ' estancias y ', ncol(vulnerab), 'variables. Además, hay ', sum(is.na(vulnerab)),'NA\'s')
+
+```
+
+Como queremos ver si existe alguna relación entre densidad demográfica y aparcamientos de bicicletas y otros medios de transporte, cargamos tambien datos poblacionales.
+
+Notamos que en la sección de *Datos Demográficos* del portal de datos abiertos <https://opendata.vlci.valencia.es/> está vacío. Vemos que existe un conjuntos de datos llamado *Manzanas catastrales con datos de población*, así que los cargamos\_\_
+
+```{r Carga poblacion incorrectos}
+pob_mal <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=%2A&f=geojson', quiet = TRUE)
+
+cat('Los datos de población tienen', nrow(pob_mal), ' estancias y ', ncol(pob_mal), 'variables. Además, hay ', sum(is.na(pob_mal)),'NA\'s')
+
+names(pob_mal)
+```
+
+Pero vemos que no hay datos de población. Por tanto tendremos que buscar otras fuentes.
+
+```{r}
+url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"
+entrada <- file.path(savedir, "Barrios2026.zip")
+salida  <- file.path(savedir,"densidad_barrios_2025.csv")
+```
+
+Mediante inspección, vemos que el zip contiene la información de los 88 barrios de Valencia. Como es muy complicado automatizar esta recolección de datos de cada uno de los xlsx, utilizamos ayuda de *Claude* para extraer esa información.
+
+```{r Claude extraccion de info, echo=FALSE, message=TRUE}
+# --- Descargar el zip si no está en data/ -----------------------------------
+
+if (file.exists(entrada)) {
+  message("Usando el zip ya descargado: ", entrada)
+} else {
+  message("Descargando ", url_descarga)
+  options(timeout = max(300, getOption("timeout")))  # el zip pesa ~20 MB
+  download.file(url_descarga, destfile = entrada, mode = "wb")  # "wb" evita corromper el zip en Windows
+}
+
+# --- Localizar los archivos -------------------------------------------------
+if (grepl("\\.zip$", entrada, ignore.case = TRUE)) {
+  carpeta <- file.path(tempdir(), "barrios")
+  unzip(entrada, exdir = carpeta)
+} else {
+  carpeta <- entrada
+}
+
+archivos <- list.files(carpeta, pattern = "^Distrito_\\d+_Barrio_\\d+\\.xlsx$",
+                       full.names = TRUE)
+if (length(archivos) == 0) stop("No se encontraron archivos .xlsx en ", carpeta)
+
+
+# --- Función de extracción --------------------------------------------------
+# En lugar de usar una celda fija (C18), se busca la cabecera
+# "Densidad de población" y se toma el valor de la celda inmediatamente
+# inferior. Las columnas de personas y superficie están justo a la izquierda.
+extraer_densidad <- function(ruta) {
+  hoja <- read_excel(ruta, sheet = "Padron", col_names = FALSE,
+                     col_types = "list", .name_repair = "minimal")
+
+  valor <- function(f, c) {
+    if (f > nrow(hoja) || c < 1 || c > ncol(hoja)) return(NA_real_)
+    v <- hoja[[c]][[f]]
+    if (is.null(v) || length(v) == 0) NA_real_ else suppressWarnings(as.numeric(v))
+  }
+
+  # Nombre del barrio a partir del título (celda A1),
+  # p. ej. "1. Padrón a 01/01/2025 . Barrio 1.1. la Seu"
+  titulo <- as.character(hoja[[1]][[1]])
+  nombre <- sub(".*Barrio\\s+\\d+\\.\\d+\\.\\s*", "", titulo)
+
+  num <- as.integer(regmatches(basename(ruta),
+                               gregexpr("\\d+", basename(ruta)))[[1]])
+
+  # Buscar la cabecera de densidad
+  pos <- NULL
+  for (c in seq_along(hoja)) {
+    textos <- vapply(hoja[[c]], function(x) if (is.character(x)) x else NA_character_,
+                     character(1))
+    f <- which(grepl("^\\s*Densidad de poblaci", textos))
+    if (length(f) > 0) { pos <- c(f[1], c); break }
+  }
+
+  if (is.null(pos)) {
+    densidad <- personas <- superficie <- NA_real_
+    warning("No se encontró la cabecera de densidad en ", basename(ruta))
+  } else {
+    densidad   <- valor(pos[1] + 1, pos[2])
+    superficie <- valor(pos[1] + 1, pos[2] - 1)
+    personas   <- valor(pos[1] + 1, pos[2] - 2)
+  }
+
+  data.frame(
+    distrito       = num[1],
+    barrio         = num[2],
+    nombre_barrio  = nombre,
+    personas       = personas,
+    superficie_ha  = superficie,
+    densidad_hab_ha = densidad,
+    stringsAsFactors = FALSE
+  )
+}
+
+
+# --- Ejecutar ---------------------------------------------------------------
+pob <- do.call(rbind, lapply(archivos, extraer_densidad))
+pob <- pob[order(pob$distrito, pob$barrio), ]
+rownames(pob) <- NULL
+
+head(pob)
+cat('Los datos de población tienen', nrow(pob), ' estancias y ', ncol(pob), 'variables. Además, hay ', sum(is.na(pob)),'NA\'s')
+
+```
+
+Ya tenemos los datos de población por barrios y distritos. Falta ahora añadir la información de la geometría de barrios y distritos al dataframe de poblacion (`pob`)
+
+```{r}
+barrios <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+cat('Los datos de barrios tienen', nrow(barrios), ' estancias y ', ncol(barrios), 'variables. Además, hay ', sum(is.na(barrios)),'NA\'s')
+head(barrios)
+
+distritos <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+
+cat('Los datos de distritos tienen', nrow(distritos), ' estancias y ', ncol(distritos), 'variables. Además, hay ', sum(is.na(distritos)),'NA\'s')
+head(distritos)
+
+```
+
+Ahora por último, lo juntamos todo en un mismo DataFrame (polígonos de distritos, barrios y densidad de población). Notamos que las variables del codigo de barrio y distrito del data frame *barrios* son de tipo chr. Los transformamos
+
+```{r}
+poligonos_barrios <- barrios |>
+  st_make_valid() |>
+  mutate(coddistrit = as.integer(coddistrit),
+         codbarrio  = as.integer(codbarrio)) |>   # transformo a int
+  select(coddistrit, codbarrio, nombre_geo = nombre)
+
+# Unimos a los polígonos el df de pob. Lo hacemos así porque pob no tiene formato de polígonos
+pob <- poligonos_barrios |>
+  left_join(st_drop_geometry(pob),
+            by = c("coddistrit" = "distrito", "codbarrio" = "barrio"))
+
+
+pob <- pob |> rename(geom_barrio = all_of(attr(pob, "sf_column")))
+
+## Hacemos lo mismo con distritos
+distritos_unidos <- distritos |>
+  st_make_valid() |>
+  mutate(coddistrit = as.integer(coddistrit)) |>
+  group_by(coddistrit) |>
+  summarise(nombre_distrito = first(nombre), .groups = "drop")  # une las piezas
+
+fila <- match(pob$coddistrit, distritos_unidos$coddistrit)
+pob$nombre_distrito <- distritos_unidos$nombre_distrito[fila]
+pob$geom_distrito   <- st_geometry(distritos_unidos)[fila]   # 2ª columna de geometría
+
+# El Port no tiene población, pero su superficie cuenta en el distrito 11
+pob <- pob |>
+  group_by(coddistrit) |>
+  mutate(densidad_distrito_hab_ha = sum(personas, na.rm = TRUE) /
+                                    sum(superficie_ha, na.rm = TRUE)) |>
+  ungroup() |>
+  relocate(nombre_distrito, .after = codbarrio)
+
+write.csv(pob, salida, row.names = FALSE, fileEncoding = "UTF-8")
+
+```
+
+```{r Carga Votos -> Claudeada del siglo}
+extraer_generales_2023 <- function(ruta) {
+  hoja <- read_excel(ruta, sheet = "Elecciones", col_names = FALSE,
+                     col_types = "list", .name_repair = "minimal")
+
+  texto <- function(f, c) {
+    if (is.na(f) || is.na(c) || f > nrow(hoja) || c > ncol(hoja)) return(NA_character_)
+    v <- hoja[[c]][[f]]
+    if (is.null(v) || length(v) == 0 || is.na(v[[1]])) NA_character_ else as.character(v)
+  }
+  valor <- function(f, c) suppressWarnings(as.numeric(texto(f, c)))
+
+  col_a <- vapply(seq_len(nrow(hoja)), function(f) texto(f, 1), character(1))
+  buscar <- function(patron, desde = 1) {
+    f <- which(grepl(patron, col_a) & seq_along(col_a) >= desde)
+    if (length(f) == 0) NA_integer_ else f[1]
+  }
+
+  num <- as.integer(regmatches(basename(ruta),
+                               gregexpr("\\d+", basename(ruta)))[[1]])
+
+  # --- 1. Bloque de Elecciones Generales 2023 (apartado 7.3) ----------------
+  ini <- buscar("^\\s*[0-9.]+\\s*Elecciones Generales 2023")
+  if (is.na(ini)) {
+    warning("No se encontró el bloque de Generales 2023 en ", basename(ruta))
+    return(NULL)
+  }
+
+  # --- 2. Participación: fila "Censo Electoral" y la de debajo --------------
+    f_part <- buscar("Censo\\s+Electoral", desde = ini)
+  if (is.na(f_part)) {
+    warning("Sin tabla de participación en ", basename(ruta)); return(NULL)
+  }
+  cabecera <- vapply(seq_len(ncol(hoja)), function(c) texto(f_part, c), character(1))
+  participacion <- setNames(
+    vapply(seq_len(ncol(hoja)), function(c) valor(f_part + 1, c), numeric(1)),
+    cabecera
+  )
+  participacion <- participacion[!is.na(names(participacion))]
+  # Busca la columna por una palabra clave sin tildes (evita líos de codificación)
+  part <- function(patron) {
+    i <- grep(patron, names(participacion), ignore.case = TRUE)
+    if (length(i) == 0) NA_real_ else unname(participacion[i[1]])
+  }
+
+  # --- 3. Votos a candidaturas: desde "Votos a candidaturas" hasta "Fuente" -
+    f_cand <- buscar("Votos a candidaturas", desde = ini)
+  if (is.na(f_cand)) {
+    warning("Sin tabla de candidaturas en ", basename(ruta)); return(NULL)
+  }
+  f_fin  <- buscar("^\\s*Fuente", desde = f_cand)
+  if (is.na(f_fin)) f_fin <- nrow(hoja) + 1
+  filas  <- (f_cand + 1):(f_fin - 1)
+  filas  <- filas[!is.na(col_a[filas]) &
+                  !is.na(vapply(filas, function(f) valor(f, 2), numeric(1)))]
+  # (la línea en valenciano "Vots a candidatures..." no tiene número en B y se descarta)
+
+  data.frame(
+    distrito      = num[1],
+    barrio        = num[2],
+    censo         = part("^Censo"),
+    votos_total   = part("votos total"),
+    votos_blanco  = part("blanco"),
+    votos_nulos   = part("nulos"),
+    votos_cand    = part("Candidaturas"),
+    abstencion    = part("^Abstenci"),
+    partido       = trimws(col_a[filas]),
+    votos         = vapply(filas, function(f) valor(f, 2), numeric(1)),
+    stringsAsFactors = FALSE
+  )
+}
+
+# --- Ejecutar ---------------------------------------------------------------
+elecc_largo <- do.call(rbind, lapply(archivos, extraer_generales_2023))
+
+# Comprobación: la suma de partidos debe coincidir con "Votos a Candidaturas"
+descuadre <- elecc_largo |>
+  group_by(distrito, barrio) |>
+  summarise(dif = sum(votos) - first(votos_cand), .groups = "drop") |>
+  filter(dif != 0)
+if (nrow(descuadre) > 0) warning("Barrios con votos que no cuadran:\n",
+                                 paste(capture.output(print(descuadre)), collapse = "\n"))
+
+# Siglas para no tener columnas con espacios y tildes
+elecc_largo <- elecc_largo |>
+  mutate(siglas = case_when(
+    grepl("POPULAR",    partido) ~ "pp",
+    grepl("SOCIALISTA", partido) ~ "psoe",
+    grepl("^VOX",       partido) ~ "vox",
+    grepl("SUMAR",      partido) ~ "sumar",
+    TRUE                         ~ "otros"
+  ))
+
+# Formato ancho: una fila por barrio y una columna por partido (votos y %)
+elecc_gen23 <- elecc_largo |>
+  select(-partido) |>
+  pivot_wider(names_from = siglas, values_from = votos,
+              values_fn = sum, values_fill = 0) |>        # 'otros' suma los minoritarios
+  mutate(participacion_pct = 100 * votos_total / censo,
+         across(c(pp, psoe, vox, sumar, otros),
+                ~ 100 * .x / votos_total, .names = "{.col}_pct")) |>   # % sobre votos emitidos
+  arrange(distrito, barrio)
+
+head(elecc_gen23)
+cat('Los datos electorales tienen', nrow(elecc_gen23), ' estancias y ', ncol(elecc_gen23),
+    'variables. Además, hay ', sum(is.na(elecc_gen23)), 'NA\'s')
+```
+
+```{r}
+# Guardamos en un objeto nuevo para poder re-ejecutar el chunk sin romper 'pob'
+
+# 1. Votos por barrio ---------------------------------------------------------
+pob_elecc <- pob |>
+  left_join(elecc_gen23 |> select(-votos_cand),
+            by = c("coddistrit" = "distrito", "codbarrio" = "barrio"))
+
+# 2. Votos por distrito -------------------------------------------------------
+# Se suman los votos de los barrios y los % se recalculan a partir de esas sumas
+# (no se promedian los % de los barrios, que daría el mismo peso a Mauella que a Russafa)
+pob_elecc <- pob_elecc |>
+  group_by(coddistrit) |>
+  mutate(
+    censo_distrito       = sum(censo,       na.rm = TRUE),
+    votos_total_distrito = sum(votos_total, na.rm = TRUE),
+    across(c(pp, psoe, vox, sumar, otros),
+           ~ 100 * sum(.x, na.rm = TRUE) / votos_total_distrito,
+           .names = "{.col}_pct_distrito"),
+    participacion_pct_distrito = 100 * votos_total_distrito / censo_distrito
+  ) |>
+  ungroup()
+
+# 3. Comprobaciones ------------------------------------------------------------
+# Barrios sin datos electorales (esperados: El Port, Mauella, Faitanar)
+pob_elecc |>
+  st_drop_geometry() |>
+  filter(is.na(votos_total)) |>
+  select(coddistrit, codbarrio, nombre_geo, personas)
+
+# Barrios con votos que no han encontrado su polígono (debería salir vacío)
+anti_join(elecc_gen23, st_drop_geometry(pob),
+          by = c("distrito" = "coddistrit", "barrio" = "codbarrio"))
+
+cat('El data frame final tiene', nrow(pob_elecc), ' estancias y ', ncol(pob_elecc), 'variables.')
+
+filepath <- paste0(savedir, 'pob_elecciones.geojson')
+if (!file.exists(filepath)) {
+  st_write(pob_elecc, filepath, delete_dsn = TRUE)
+}
+
+```
+
+Ahora por último, lo juntamos todo en un mismo DataFrame (polígonos de distritos, barrios y densidad de población). Notamos que las variables del codigo de barrio y distrito del data frame *barrios* son de tipo chr. Los transformamos
+
+```{r}
+poligonos_barrios <- barrios |>
+          mutate(coddistrit = as.integer(coddistrit),
+         codbarrio  = as.integer(codbarrio)) |> #transformo a int
+  select(coddistrit, codbarrio, nombre_geo = nombre) 
+
+
+#unimos los poligonos al df de pobs, identificando el nombre de variables con el argumento by()
+pob <- pob |>
+  left_join(poligonos_barrios,
+            by = c("distrito" = "coddistrit", "barrio" = "codbarrio")) |>
+  st_as_sf() # sf == Simple Features es para que, por defecto, siempre arrastre la variable geometry (volverlo un objeto espacial, digamos)
+
+st_geometry(pob) <- "geom_barrio"   # nombre claro para la geometría activa
+
+
+## hacemos lo mismo pero ahora con distritos
+
+distritos_unidos <- distritos |>
+  st_make_valid() |>
+  mutate(coddistrit = as.integer(coddistrit)) |>
+  group_by(coddistrit) |>
+  summarise(nombre_distrito = first(nombre), .groups = "drop")  # une las piezas
+
+fila <- match(pob$distrito, distritos_unidos$coddistrit)
+pob$nombre_distrito <- distritos_unidos$nombre_distrito[fila]
+pob$geom_distrito   <- st_geometry(distritos_unidos)[fila]   # 2ª columna de geometría
+
+# El Port no tiene población pero su superficie cuenta en el distrito 11.
+pob <- pob |>
+  group_by(distrito) |>
+  mutate(densidad_distrito_hab_ha = sum(personas, na.rm = TRUE) /
+                                    sum(superficie_ha, na.rm = TRUE)) |>
+  ungroup() |>
+  relocate(nombre_distrito, .after = barrio)
+
+
+
+```
+
 ## Gráficas densidad poblacion y paradas valenbisi
+
 (hay que ponerlas un poco mejor y mas ajustadas)
 
 ```{r}
@@ -48,3 +498,49 @@ ggplot() +
     title = "Densidad de población y estaciones ValenBisi"
   )
 ```
+
+# Aquí empiezo: 
+En primer lugar, se va a crear un DataFrame en el que cada fila corresponda a un distrito de Valencia y contenga la densidad de población junto con el número de paradas o estaciones disponibles de cada medio de transporte público.
+
+Para ello, debido a que los datos de población están disponibles a nivel de barrio, agrupamos la información para obtener una única densidad de población por cada zona. 
+
+```{r}
+densidad_distrito <- pob %>% st_drop_geometry() %>% group_by(coddistrit,nombre_distrito) %>% summarise( densidad = first(densidad_distrito_hab_ha))
+```
+Por otro lado, como los datos de transporte únicamente proporcionan la localización geográfica de sus estaciones o paradas, será necesario asociar cada punto al distrito correspondiente y posteriormente contabilizar el número de estaciones existentes en cada zona. Finalmente, toda esta información se unirá en una única tabla que permitirá analizar la relación entre densidad de población y oferta de transporte público.
+
+
+```{r}
+# Concretamos los distritos de cada parada o estación de transporte público
+emt_distrito <- st_join(emt, distritos_unidos)
+metro_distrito <- st_join(fgv, distritos_unidos)
+valenbisi_distrito <- st_join(valenbisi, distritos_unidos)
+
+
+# A continuación, contamos cuántas hay por distrito
+
+emt_n <- emt_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n_emt")
+metro_n <- metro_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n_metro")
+valenbisi_n <- valenbisi_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n_valenbisi")
+
+#Finalmente, unimos estos datos obtenidos a la tabla que hemos creado anteriormente
+
+datos_transporte <- densidad_distrito %>% left_join(emt_count, by = "coddistrit") %>% left_join(metro_count, by = "coddistrit") %>% left_join(valenbisi_count, by = "coddistrit")
+
+
+# # ============================================================
+# # 5. Sustituir NA por 0
+# # ============================================================
+# 
+# datos_transporte <- datos_transporte %>%
+#   mutate(
+#     across(
+#       c(n_emt, n_metro, n_valenbisi),
+#       ~replace_na(.x, 0)
+#     )
+#   )
+
+
+View(datos_transporte)
+```
+
