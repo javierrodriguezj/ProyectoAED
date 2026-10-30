@@ -17,6 +17,8 @@ savedir <- '../data/'
 
 ```{r}
 library(sf)
+library(readxl)
+library(dplyr)
 ```
 
 ## Luego vamos cambiando el texto, voy a ir cargando los datos
@@ -24,10 +26,10 @@ library(sf)
 Descargamos y leemos los datos (yo dejaría esto a modo de 'anécdota').
 
 ```{r Carga parking bici}
-download.file(url = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', destfile = '../data/aparcaments_bic.geojson', quiet = TRUE)
+download.file(url = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', destfile = '../data/aparcaments_bic_CORTADO.geojson', quiet = TRUE)
 
-aparc_bic1 <- read_sf("../data/aparcaments_bic.geojson")
-cat('Nuestros datos tienen', nrow(aparc_bic1), ' instancias y ', ncol(aparc_bic1), 'variables.')
+aparc_bic1 <- read_sf("../data/aparcaments_bic_CORTADO.geojson")
+cat('Nuestros datos tienen', nrow(aparc_bic1), ' instancias y ', ncol(aparc_bic1), 'variables. Además, hay ', sum(is.na(aparc_bic1)),'NA\'s')
 ```
 
 Es extraño, que el Ajuntament haya decidido poner *exactamente* 2000
@@ -44,7 +46,7 @@ if (!file.exists(filepath)) {
   st_write(aparc_bic, filepath, delete_dsn = TRUE)
 }
 
-cat('Nuestros datos tienen', nrow(aparc_bic), ' instancias y ', ncol(aparc_bic), 'variables.')
+cat('Nuestros datos tienen', nrow(aparc_bic), ' instancias y ', ncol(aparc_bic), 'variables. Además, hay ', sum(is.na(aparc_bic)),'NA\'s')
 ```
 
 ya decía yo...
@@ -59,7 +61,7 @@ if (!file.exists(filepath)) {
   st_write(valenbisi, filepath, delete_dsn = TRUE)
 }
 
-cat('Los datos de ValenBisi tienen', nrow(valenbisi), ' estancias y ', ncol(valenbisi), 'variables. \n')
+cat('Los datos de ValenBisi tienen', nrow(valenbisi), ' estancias y ', ncol(valenbisi), 'variables. Además, hay ', sum(is.na(valenbisi)),'NA\'s')
 ```
 
 
@@ -71,7 +73,7 @@ if (!file.exists(filepath)) {
   st_write(emt, filepath, delete_dsn = TRUE)
 }
 
-cat('Los datos de EMT tienen', nrow(emt), ' estancias y ', ncol(emt), 'variables.\n')
+cat('Los datos de EMT tienen', nrow(emt), ' estancias y ', ncol(emt), 'variables. Además, hay ', sum(is.na(emt)),'NA\'s')
 ```
 
 
@@ -83,7 +85,20 @@ if (!file.exists(filepath)) {
   st_write(fgv, filepath, delete_dsn = TRUE)
 }
 
-cat('Los datos de FGV tienen', nrow(fgv), ' estancias y ', ncol(fgv), 'variables.\n')
+cat('Los datos de FGV tienen', nrow(fgv), ' estancias y ', ncol(fgv), 'variables. Además, hay ', sum(is.na(fgv)),'NA\'s')
+
+```
+
+```{r Carga Vulnerabilidad}
+
+vulnerab <- st_read(dsn = 'https://opendata.vlci.valencia.es/dataset/ca18278b-d040-4274-b9c7-c1a9daae54b9/resource/fd2ca0dc-5344-4aad-8934-2077a0bb120d/download/vulnerabilidad-por-barrios.geojson', quiet = TRUE)
+
+filepath <- paste0(savedir, 'vulnerab_eco.geojson')
+if (!file.exists(filepath)) {
+  st_write(vulnerab, filepath, delete_dsn = TRUE)
+}
+
+cat('Los datos de vulnerabilidad económica tienen', nrow(vulnerab), ' estancias y ', ncol(vulnerab), 'variables. Además, hay ', sum(is.na(vulnerab)),'NA\'s')
 
 ```
 
@@ -96,36 +111,24 @@ abiertos <https://opendata.vlci.valencia.es/> está vacío. Vemos que
 existe un conjuntos de datos llamado *Manzanas catastrales con datos de
 población*, así que los cargamos\_\_
 
-```{r}
+```{r Carga poblacion incorrectos}
 pob_mal <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=%2A&f=geojson', quiet = TRUE)
 
-cat('Los datos de población tienen', nrow(pob_mal), ' estancias y ', ncol(pob_mal), 'variables.\n')
+cat('Los datos de población tienen', nrow(pob_mal), ' estancias y ', ncol(pob_mal), 'variables. Además, hay ', sum(is.na(pob_mal)),'NA\'s')
 
 names(pob_mal)
 ```
 
 
-```{r Carga Vulnerabilidad}
 
-vulnerab <- st_read(dsn = 'https://opendata.vlci.valencia.es/dataset/ca18278b-d040-4274-b9c7-c1a9daae54b9/resource/fd2ca0dc-5344-4aad-8934-2077a0bb120d/download/vulnerabilidad-por-barrios.geojson', quiet = TRUE)
-
-filepath <- paste0(savedir, 'vulnerab_eco.geojson')
-if (!file.exists(filepath)) {
-  st_write(vulnerab, filepath, delete_dsn = TRUE)
-}
-
-cat('Los datos de vulnerabilidad económica tienen', nrow(vulnerab), ' estancias y ', ncol(vulnerab), 'variables.\n')
-
-```
 
 Pero vemos que no hay datos de población. Por tanto tendremos que buscar
 otras fuentes.
 
 ```{r}
 url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"
-carpeta_datos <- "data"
-entrada <- file.path(carpeta_datos, "Barrios2026.zip")
-salida  <- file.path(carpeta_datos,"densidad_barrios_2025.csv")
+entrada <- file.path(savedir, "Barrios2026.zip")
+salida  <- file.path(savedir,"densidad_barrios_2025.csv")
 ```
 
 Mediante inspección, vemos que el zip contiene la información de los 88
@@ -135,7 +138,6 @@ extraer esa información.
 
 ```{r Claude extraccion de info, echo=FALSE, message=TRUE}
 # --- Descargar el zip si no está en data/ -----------------------------------
-dir.create(carpeta_datos, showWarnings = FALSE, recursive = TRUE)
 
 if (file.exists(entrada)) {
   message("Usando el zip ya descargado: ", entrada)
@@ -156,6 +158,7 @@ if (grepl("\\.zip$", entrada, ignore.case = TRUE)) {
 archivos <- list.files(carpeta, pattern = "^Distrito_\\d+_Barrio_\\d+\\.xlsx$",
                        full.names = TRUE)
 if (length(archivos) == 0) stop("No se encontraron archivos .xlsx en ", carpeta)
+
 
 # --- Función de extracción --------------------------------------------------
 # En lugar de usar una celda fija (C18), se busca la cabecera
@@ -208,32 +211,28 @@ extraer_densidad <- function(ruta) {
   )
 }
 
+
 # --- Ejecutar ---------------------------------------------------------------
 pob <- do.call(rbind, lapply(archivos, extraer_densidad))
 pob <- pob[order(pob$distrito, pob$barrio), ]
 rownames(pob) <- NULL
 
 head(pob)
-
-sin_dato <- pob$archivo[is.na(pob$densidad_hab_ha)]
-if (length(sin_dato) > 0) {
-  message("Archivos sin dato de densidad: ", paste(sin_dato, collapse = ", "))
-}
-
-#write.csv(pob, salida, row.names = FALSE, fileEncoding = "UTF-8")
-#message("Guardado en: ", normalizePath(salida))
+cat('Los datos de población tienen', nrow(pob), ' estancias y ', ncol(pob), 'variables. Además, hay ', sum(is.na(pob)),'NA\'s')
 
 ```
+
+Ya tenemos los datos de población por barrios y distritos. Falta ahora añadir la información de la geometría de barrios y distritos al dataframe de poblacion (`pob`)
 
 ```{r}
 barrios <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 
-cat('Los datos de barrios tienen', nrow(barrios), ' estancias y ', ncol(barrios), 'variables.\n')
+cat('Los datos de barrios tienen', nrow(barrios), ' estancias y ', ncol(barrios), 'variables. Además, hay ', sum(is.na(barrios)),'NA\'s')
 head(barrios)
 
 distritos <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 
-cat('Los datos de distritos tienen', nrow(distritos), ' estancias y ', ncol(distritos), 'variables.\n')
+cat('Los datos de distritos tienen', nrow(distritos), ' estancias y ', ncol(distritos), 'variables. Además, hay ', sum(is.na(distritos)),'NA\'s')
 head(distritos)
 
 ```
@@ -245,40 +244,38 @@ chr. Los transformamos
 
 ```{r}
 poligonos_barrios <- barrios |>
-          mutate(coddistrit = as.integer(coddistrit),
-         codbarrio  = as.integer(codbarrio)) |> #transformo a int
-  select(coddistrit, codbarrio, nombre_geo = nombre) 
+  st_make_valid() |>
+  mutate(coddistrit = as.integer(coddistrit),
+         codbarrio  = as.integer(codbarrio)) |>   # transformo a int
+  select(coddistrit, codbarrio, nombre_geo = nombre)
+
+# Unimos a los polígonos el df de pob. Lo hacemos así porque pob no tiene formato de polígonos
+pob <- poligonos_barrios |>
+  left_join(st_drop_geometry(pob),
+            by = c("coddistrit" = "distrito", "codbarrio" = "barrio"))
 
 
-#unimos los poligonos al df de pobs, identificando el nombre de variables con el argumento by()
-pob <- pob |>
-  left_join(poligonos_barrios,
-            by = c("distrito" = "coddistrit", "barrio" = "codbarrio")) |>
-  st_as_sf() # sf == Simple Features es para que, por defecto, siempre arrastre la variable geometry (volverlo un objeto espacial, digamos)
+pob <- pob |> rename(geom_barrio = all_of(attr(pob, "sf_column")))
 
-st_geometry(pob) <- "geom_barrio"   # nombre claro para la geometría activa
-
-
-## hacemos lo mismo pero ahora con distritos
-
+## Hacemos lo mismo con distritos
 distritos_unidos <- distritos |>
   st_make_valid() |>
   mutate(coddistrit = as.integer(coddistrit)) |>
   group_by(coddistrit) |>
   summarise(nombre_distrito = first(nombre), .groups = "drop")  # une las piezas
 
-fila <- match(pob$distrito, distritos_unidos$coddistrit)
+fila <- match(pob$coddistrit, distritos_unidos$coddistrit)
 pob$nombre_distrito <- distritos_unidos$nombre_distrito[fila]
 pob$geom_distrito   <- st_geometry(distritos_unidos)[fila]   # 2ª columna de geometría
 
-# El Port no tiene población pero su superficie cuenta en el distrito 11.
+# El Port no tiene población, pero su superficie cuenta en el distrito 11
 pob <- pob |>
-  group_by(distrito) |>
+  group_by(coddistrit) |>
   mutate(densidad_distrito_hab_ha = sum(personas, na.rm = TRUE) /
                                     sum(superficie_ha, na.rm = TRUE)) |>
   ungroup() |>
-  relocate(nombre_distrito, .after = barrio)
+  relocate(nombre_distrito, .after = codbarrio)
 
-
+write.csv(pob, salida, row.names = FALSE, fileEncoding = "UTF-8")
 
 ```
