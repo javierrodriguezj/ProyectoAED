@@ -196,7 +196,139 @@ if (!file.exists(filepath)) download.file(url_descarga, destfile = filepath, mod
 
 ## *Technically correct data*
 
-Aquí importamos y adaptamos los datos a los formatos que maneja R...
+### Datos de los barrios y distritos
+
+El archivo `barrios.zip` contiene varios archivos .xlsx, que son los que realmente contienen los datos que nos interesan. Concretamente, queremos extraer los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. A continuación, extraeremos el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
+
+```{r, Definición de funciones}
+extraer_densidad <- function(ruta) {
+  hoja <- read_excel(ruta, sheet = "Padron", col_names = FALSE,
+                     col_types = "list", .name_repair = "minimal")
+  
+  valor <- function(f, c) {
+    if (f > nrow(hoja) || c < 1 || c > ncol(hoja)) return(NA_real_)
+    v <- hoja[[c]][[f]]
+    if (is.null(v) || length(v) == 0) NA_real_ else suppressWarnings(as.numeric(v))
+  }
+  
+  # Nombre del barrio a partir del título (celda A1),
+  # p. ej. "1. Padrón a 01/01/2025 . Barrio 1.1. la Seu"
+  titulo <- as.character(hoja[[1]][[1]])
+  nombre <- sub(".*Barrio\\s+\\d+\\.\\d+\\.\\s*", "", titulo)
+  
+  num <- as.integer(regmatches(basename(ruta), gregexpr("\\d+", basename(ruta)))[[1]])
+  
+  # Buscar la cabecera de densidad
+  pos <- NULL
+  for (c in seq_along(hoja)) {
+    textos <- vapply(hoja[[c]], function(x) if (is.character(x)) x else NA_character_, character(1))
+    f <- which(grepl("^\\s*Densidad de poblaci", textos))
+    if (length(f) > 0) { pos <- c(f[1], c); break }
+  }
+  
+  if (is.null(pos)) {
+    densidad <- personas <- superficie <- NA_real_
+    warning("No se encontró la cabecera de densidad en ", basename(ruta))
+  } else {
+    densidad   <- valor(pos[1] + 1, pos[2])
+    superficie <- valor(pos[1] + 1, pos[2] - 1)
+    personas   <- valor(pos[1] + 1, pos[2] - 2)
+  }
+  
+  data.frame(
+    distrito       = num[1],
+    barrio         = num[2],
+    nombre_barrio  = nombre,
+    personas       = personas,
+    superficie_barrio  = superficie,
+    densidad_barrio = densidad,
+    stringsAsFactors = FALSE
+  )
+}
+```
+
+```{r}
+# Descomprimimos el .zip y listamos los archivos.
+filepath <- paste0(savedir, 'barrios.zip')
+folder <- paste0(savedir, "barrios/")
+unzip(filepath, exdir = folder)
+archivos <- list.files(folder, pattern = "^Distrito_\\d+_Barrio_\\d+\\.xlsx$", full.names = TRUE)
+
+# Leemos los archivos
+df.pob <- do.call(rbind, lapply(archivos, extraer_densidad))
+df.pob <- df.pob[order(df.pob$distrito, df.pob$barrio), ]
+rownames(df.pob) <- NULL
+
+head(df.pob)
+```
+
+A este dataset le falta la información de la geometría de barrios y distritos.
+
+```{r}
+filepath <- paste0(savedir, "geom_barrios.geojson")
+df.geom_barrios <- st_read(dsn=filepath, quiet=T)
+head(df.geom_barrios)
+
+cat("\n")
+
+filepath <- paste0(savedir, "geom_distritos.geojson")
+df.geom_distritos <- st_read(dsn=filepath, quiet=T)
+head(df.geom_distritos)
+```
+
+```{r}
+# Creamos dataframe de distritos
+geom_distritos <- df.geom_distritos |>
+  st_make_valid() |>
+  mutate(coddistrit = as.integer(coddistrit)) |> # chr to int
+  group_by(coddistrit) |> # Agrupamos por código de distrito
+  summarise(nombre_distrito = first(nombre), .groups = "drop") |> # Añadimos el nombre del distrito
+  rename(geom_distrito = all_of(attr(df.geom_distritos, "sf_column"))) # Renombramos la columna de geometría
+
+# Juntamos geom_barrios y el anterior de distritos en df.pob
+df.pob <- df.geom_barrios |>
+  st_make_valid() |>
+  mutate(coddistrit = as.integer(coddistrit), # chr to int
+         codbarrio  = as.integer(codbarrio)) |> # chr to int
+  select(coddistrit, codbarrio, nombre_barrio_geo = nombre) |>
+  right_join(st_drop_geometry(df.pob), # Juntamos a df.pob
+            by = c("coddistrit" = "distrito", "codbarrio" = "barrio")) |>
+  select(-nombre_barrio) |> # Eliminamos columna redundante
+  rename(nombre_barrio=nombre_barrio_geo) %>%
+  rename(geom_barrio = all_of(attr(., "sf_column"))) |> # Renombramos la columna de geometría
+  left_join(tibble::as_tibble(geom_distritos), by = "coddistrit") |> # Juntamos los distritos también
+  relocate(nombre_distrito, .after = codbarrio) |>
+  relocate(geom_distrito, .before = geom_barrio) |>
+  # Calculamos la densidad por distrito
+  group_by(coddistrit) |>
+  mutate(densidad_distrito = sum(personas, na.rm = TRUE) /
+           sum(superficie_barrio, na.rm = TRUE)) |>
+  ungroup() |>
+  relocate(densidad_distrito, .before = densidad_barrio)
+
+head(as_tibble(df.pob))
+
+# Guardamos el dataset. No obstante, no se pueden guardar las dos geometrías en la misma tabla fácilente. Así que solo guardaremos la de los barrios primero.
+filepath <- paste0(savedir, "poblacion_geom_barrios.geojson")
+barrios_geometria <- df.pob |> 
+  select(geom_barrio)
+suppressWarnings(st_write(barrios_geometria, filepath, delete_dsn = TRUE))
+
+# Ahora guardaremos todo, con ambas geometrías. Debemos separar las geometrías en capas. El problema es que el archivo está encriptado, por eso preferimos guardar el dataset en .geojson también.
+filepath <- paste0(savedir, "poblacion.gpkg")
+
+barrios_limpio <- df.pob |> 
+  select(-geom_distrito)
+suppressWarnings(st_write(barrios_limpio, filepath, layer = "barrios", delete_dsn = TRUE))
+
+distritos_unicos <- df.pob |> 
+  st_drop_geometry() |>
+  select(coddistrit, nombre_distrito, geom_distrito) |> 
+  distinct() |>
+  st_set_geometry("geom_distrito") |>
+  st_cast("MULTIPOLYGON")
+suppressWarnings(st_write(distritos_unicos, filepath, layer = "distritos", delete_layer = TRUE))
+```
 
 ## *Consistent data*
 
