@@ -518,29 +518,12 @@ valenbisi_distrito <- st_join(valenbisi, distritos_unidos)
 
 
 # A continuación, contamos cuántas hay por distrito
-
 emt_n <- emt_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n_emt")
 metro_n <- metro_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n_metro")
 valenbisi_n <- valenbisi_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n_valenbisi")
 
 #Finalmente, unimos estos datos obtenidos a la tabla que hemos creado anteriormente
-
 datos_transporte <- densidad_distrito %>% left_join(emt_count, by = "coddistrit") %>% left_join(metro_count, by = "coddistrit") %>% left_join(valenbisi_count, by = "coddistrit")
 
-
-# # ============================================================
-# # 5. Sustituir NA por 0
-# # ============================================================
-# 
-# datos_transporte <- datos_transporte %>%
-#   mutate(
-#     across(
-#       c(n_emt, n_metro, n_valenbisi),
-#       ~replace_na(.x, 0)
-#     )
-#   )
-
-
-View(datos_transporte)
 ```
 
