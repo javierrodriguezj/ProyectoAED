@@ -3,3 +3,98 @@ title: "angel"
 output: html_document
 ---
 
+```{r}
+
+library(sf)
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(stringr)
+```
+
+# Techically.. data
+
+```{r}
+# Cargamos los datos que hemos guardado previamente.
+rm(list = ls()); filepath <- "../data/poblacion.gpkg"; savedir <- '../data/'
+df.valenbisi    <- st_read(paste0(savedir, 'valenbisi.geojson'), quiet = TRUE)
+df.emt          <- st_read(paste0(savedir, 'emt.geojson'), quiet = TRUE)
+df.fgv_paradas  <- st_read(paste0(savedir, 'fgv_paradas.geojson'), quiet = TRUE)
+df.vulnerab_eco <- st_read(paste0(savedir, 'vulnerab_eco.geojson'), quiet = TRUE)
+
+df.valenbisi <- df.valenbisi |> 
+  mutate(open=as.logical(open), ticket=as.logical(ticket), updated_at=dmy_hms(updated_at, tz='Europe/Madrid'))
+
+df.emt <- df.emt |> 
+  mutate(suprimida=as.logical(suprimida), lineas = strsplit(lineas, ","))
+
+df.fgv_paradas <- df.fgv_paradas |> 
+  mutate(codigo=as.integer(codigo), tipo=as.logical(tipo), lineas = strsplit(linea, ","), .keep="unused") |> 
+  relocate(lineas, .before = proximas_llegadas) |>
+  rename(proximas_llegadas_es = proximas_llegadas, proximas_llegadas_val = proximes_llegadas)
+
+df.vulnerab_eco <- df.vulnerab_eco |>
+  pivot_longer(cols = matches("^(ind|vul)_"), names_to = c(".value", "categoria"), names_pattern = "^(.*)_(.*)$") |>
+  rename(indice=ind, vulnerabilidad=vul) |>
+  mutate(
+    lon = as.numeric(str_extract(geo_point_2d, "(?<=\"lon\":\\s)-?[0-9\\.]+")),
+    lat = as.numeric(str_extract(geo_point_2d, "(?<=\"lat\":\\s)-?[0-9\\.]+")),
+    vulnerabilidad=factor(vulnerabilidad, levels=c("Vulnerabilidad Baja", "Vulnerabilidad Media", "Vulnerabilidad Alta"), ordered=T)
+    ) |>
+  relocate(c("lon", "lat"), .before=geo_point_2d) |>
+  select(-geo_point_2d)
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(sf)
+
+# 1. First, create a cleaned wide format (Ideal for standard map making)
+df_clean <- df.vulnerab_eco %>%
+  mutate(
+    # Parse the JSON-like 'geo_point_2d' string into numeric lon/lat columns
+    lon = as.numeric(str_extract(geo_point_2d, "(?<=\"lon\":\\s)-?[0-9\\.]+")),
+    lat = as.numeric(str_extract(geo_point_2d, "(?<=\"lat\":\\s)-?[0-9\\.]+")),
+    
+    # Convert character vulnerability columns to ordered factors for correct plotting order
+    across(starts_with("vul_"), ~ factor(.x, 
+                                         levels = c("Vulnerabilidad Baja", "Vulnerabilidad Media", 
+                                                    "Vulnerabilidad Alta", "Vulnerabilidad Muy Alta"),
+                                         ordered = TRUE
+    ))
+  ) %>%
+  # Drop the redundant raw string column
+  select(-geo_point_2d)
+
+# 2. Pivot into a strict Tidy Long Format (Ideal for non-spatial EDA and faceting)
+df_tidy <- df_clean %>%
+  pivot_longer(
+    cols = matches("^(ind|vul)_"),
+    names_to = c(".value", "domain"),
+    names_pattern = "^(.*)_(.*)$" 
+  )
+```
+
+# Consistent data
+
+Cargamos los datos que hemos guardado previamente.
+
+```{r}
+rm(list = ls()); filepath <- "../data/poblacion.gpkg"; savedir <- '../data/'
+
+# Población
+b <- suppressWarnings(st_read(filepath, layer = "barrios", quiet = TRUE))
+d <- suppressWarnings(st_read(filepath, layer = "distritos", quiet = TRUE))
+st_geometry(b) <- "geom_barrio"
+st_geometry(d) <- "geom_distrito"
+df.pob <- b |> 
+  left_join(select(as.data.frame(d), coddistrit, geom_distrito), by = "coddistrit")
+rm(b, d)
+```
+
+```{r}
+
+```
