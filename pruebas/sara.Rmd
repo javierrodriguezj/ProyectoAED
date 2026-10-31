@@ -33,17 +33,17 @@ Descargamos y leemos los datos (yo dejaría esto a modo de 'anécdota').
 
 Es extraño, que el Ajuntament haya decidido poner *exactamente* 2000 aparcamientos de bicicletas. Vamos a comprobar otra forma de leer los datos (me la encontré por los interneses)
 
-```{r Carga de bici 2.0}
-aparc_bic <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
-
-
-
-filepath <- paste0(savedir, 'aparcamiento_bici.geojson')
-if (!file.exists(filepath)) {
-  st_write(aparc_bic, filepath, delete_dsn = TRUE)
-}
-
-cat('Nuestros datos tienen', nrow(aparc_bic), ' instancias y ', ncol(aparc_bic), 'variables. Además, hay ', sum(is.na(aparc_bic)),'NA\'s')
+```{# {r Carga de bici 2.0}
+# aparc_bic <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+# 
+# 
+# 
+# filepath <- paste0(savedir, 'aparcamiento_bici.geojson')
+# if (!file.exists(filepath)) {
+#   st_write(aparc_bic, filepath, delete_dsn = TRUE)
+# }
+# 
+# cat('Nuestros datos tienen', nrow(aparc_bic), ' instancias y ', ncol(aparc_bic), 'variables. Además, hay ', sum(is.na(aparc_bic)),'NA\'s')
 ```
 
 ya decía yo...
@@ -580,3 +580,5 @@ plot(
   pch = 16
 )
 ```
+
+Al observar la distribución de las estaciones de Metrovalencia, se comprueba que algunos puntos se encuentran fuera de los distritos de Valencia. Esto explica la diferencia entre los 143 registros iniciales del dataset y el número de estaciones finalmente asignadas a cada distrito. Por ello, para el análisis posterior solo se tendrán en cuenta las estaciones situadas dentro del área de estudio.
