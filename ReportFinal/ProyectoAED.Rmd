@@ -117,6 +117,7 @@ output:
 # Instalación y carga de librerías
 
 ```{r, setup, message=FALSE, warning=FALSE}
+rm(list = ls())
 # Asegurar que pacman esté instalado
 if (!require("pacman")) install.packages("pacman")
 
@@ -127,6 +128,11 @@ pacman::p_load(
   tidyr,
   dyplr
 )
+
+library(sf)
+library(readxl)
+library(dplyr)
+library(tidyr)
 ```
 
 # Descarga de los datos (*Raw data*)
@@ -149,10 +155,9 @@ A continuación descargaremos todos los datasets que hemos utilizado para este p
 
 - Geometría distritos: <https://opendata.vlci.valencia.es/dataset/districtes-distritos>
 
-- [FALTA]: barrios.zip
+- 
 
 ```{r, message=FALSE, warning=FALSE}
-rm(list = ls())
 savedir <- '../data/'
 if (!file.exists(savedir)) dir.create(savedir)
 
@@ -333,6 +338,10 @@ suppressWarnings(st_write(distritos_unicos, filepath, layer = "distritos", delet
 ## *Consistent data*
 
 Aquí decidimos qué hacer con los datos raretes...
+
+```{r}
+
+```
 
 # Análisis
 
