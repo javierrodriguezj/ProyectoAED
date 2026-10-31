@@ -309,7 +309,8 @@ df.pob <- df.geom_barrios |>
   mutate(densidad_distrito = sum(personas, na.rm = TRUE) /
            sum(superficie_barrio, na.rm = TRUE)) |>
   ungroup() |>
-  relocate(densidad_distrito, .before = densidad_barrio)
+  relocate(densidad_distrito, .before = densidad_barrio) |>
+  arrange(coddistrit, codbarrio) # Ordenamos
 
 head(as_tibble(df.pob))
 
