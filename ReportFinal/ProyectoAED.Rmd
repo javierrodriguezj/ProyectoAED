@@ -122,17 +122,9 @@ rm(list = ls())
 if (!require("pacman")) install.packages("pacman")
 
 # Carga e instala automáticamente solo las librerías faltantes
-pacman::p_load(
-  sf,
-  readxl,
-  tidyr,
-  dyplr
-)
+pacman::p_load(sf, readxl, tidyr, stringr, dyplr, lubridate)
 
-library(sf)
-library(readxl)
-library(dplyr)
-library(tidyr)
+invisible(lapply(c("sf", "readxl", "dplyr", "tidyr", "stringr", "lubridate"), library, character.only = TRUE))
 ```
 
 # Descarga de los datos (*Raw data*)
@@ -199,7 +191,44 @@ if (!file.exists(filepath)) download.file(url_descarga, destfile = filepath, mod
 
 # Limpieza de datos
 
-## *Technically correct data*
+## *Technically correct & consistent data*
+
+### Datos de transporte público
+
+Primero realizaremos una conversión de tipos de datos a los más apropiados en cada caso.
+
+```{r}
+# Cargamos los datos que hemos guardado previamente.
+rm(list = ls()); filepath <- "../data/poblacion.gpkg"; savedir <- '../data/'
+df.valenbisi    <- st_read(paste0(savedir, 'valenbisi.geojson'), quiet = TRUE)
+df.emt          <- st_read(paste0(savedir, 'emt.geojson'), quiet = TRUE)
+df.fgv_paradas  <- st_read(paste0(savedir, 'fgv_paradas.geojson'), quiet = TRUE)
+df.vulnerab_eco <- st_read(paste0(savedir, 'vulnerab_eco.geojson'), quiet = TRUE)
+```
+
+```{r}
+df.valenbisi <- df.valenbisi |> 
+  mutate(open=as.logical(open), ticket=as.logical(ticket), updated_at=dmy_hms(updated_at, tz='Europe/Madrid'))
+
+df.emt <- df.emt |> 
+  mutate(suprimida=as.logical(suprimida), lineas = strsplit(lineas, ","))
+
+df.fgv_paradas <- df.fgv_paradas |> 
+  mutate(codigo=as.integer(codigo), tipo=as.logical(tipo), lineas = strsplit(linea, ","), .keep="unused") |> 
+  relocate(lineas, .before = proximas_llegadas) |>
+  rename(proximas_llegadas_es = proximas_llegadas, proximas_llegadas_val = proximes_llegadas)
+
+df.vulnerab_eco <- df.vulnerab_eco |>
+  pivot_longer(cols = matches("^(ind|vul)_"), names_to = c(".value", "categoria"), names_pattern = "^(.*)_(.*)$") |>
+  rename(indice=ind, vulnerabilidad=vul) |>
+  mutate(
+    lon = as.numeric(str_extract(geo_point_2d, "(?<=\"lon\":\\s)-?[0-9\\.]+")),
+    lat = as.numeric(str_extract(geo_point_2d, "(?<=\"lat\":\\s)-?[0-9\\.]+")),
+    vulnerabilidad=factor(vulnerabilidad, levels=c("Vulnerabilidad Baja", "Vulnerabilidad Media", "Vulnerabilidad Alta"), ordered=T)
+  ) |>
+  relocate(c("lon", "lat"), .before=geo_point_2d) |>
+  select(-geo_point_2d)
+```
 
 ### Datos de los barrios y distritos
 
@@ -334,16 +363,18 @@ distritos_unicos <- df.pob |>
   st_set_geometry("geom_distrito") |>
   st_cast("MULTIPOLYGON")
 suppressWarnings(st_write(distritos_unicos, filepath, layer = "distritos", delete_layer = TRUE))
+
+df.geom_barrios <- NULL; df.geom_distritos <- NULL; barrios_geometria <- NULL; barrios_limpio <- NULL; distritos_unicos <- NULL; geom_distritos <- NULL
 ```
 
 ## *Consistent data*
 
-Aquí decidimos qué hacer con los datos raretes...
-
-```{r}
-
-```
+En la sección anterior hemos aprovechado para realizar este tipo de transformaciones ya. Por ejemplo, `df.vulnerab_eco` no era *tidy* y ha sido reestructurada mediante funciones como `pivot_longer()` ya que contenía variables en los nombres de las columnas. Otros tipos de transformaciones como renombramientos o reordenaciones también han sido aplciadas para mantener la consistencia con una misma estructura de datos.
 
 # Análisis
 
 Aquí empezaría nuestro análisis como tal...
+
+```{r}
+
+```
