@@ -17,6 +17,7 @@ library(sf)
 library(readxl)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 ```
 
 ## Luego vamos cambiando el texto, voy a ir cargando los datos
@@ -506,7 +507,7 @@ En primer lugar, se va a crear un DataFrame en el que cada fila corresponda a un
 Para ello, debido a que los datos de población están disponibles a nivel de barrio, agrupamos la información para obtener una única densidad de población por cada zona.
 
 ```{r}
-densidad_distrito <- pob %>% st_drop_geometry() %>% group_by(coddistrit,nombre_distrito) %>% summarise( densidad = first(densidad_distrito_hab_ha))
+densidad_distrito <- pob %>% st_drop_geometry() %>% group_by(coddistrit,nombre_distrito) %>% summarise(densidad = first(densidad_distrito_hab_ha))
 ```
 
 Por otro lado, como los datos de transporte únicamente proporcionan la localización geográfica de sus estaciones o paradas, será necesario asociar cada punto al distrito correspondiente y posteriormente contabilizar el número de estaciones existentes en cada zona. Finalmente, toda esta información se unirá en una única tabla que permitirá analizar la relación entre densidad de población y oferta de transporte público.
@@ -526,4 +527,56 @@ valenbisi_n <- valenbisi_distrito %>% st_drop_geometry() %>% count(coddistrit, n
 #Finalmente, unimos estos datos obtenidos a la tabla que hemos creado anteriormente
 datos_transporte <- densidad_distrito %>% left_join(emt_n, by = "coddistrit") %>% left_join(metro_n, by = "coddistrit") %>% left_join(valenbisi_n, by = "coddistrit")
 
+#Cotamos el nuemro de paradas de cada transporte:
+cat("Total de paradas EMT:", sum(datos_transporte$n_emt, na.rm = TRUE), "\n")
+cat("Total de estaciones MetroValencia:", sum(datos_transporte$n_metro, na.rm = TRUE), "\n")
+cat("Total de estaciones Valenbisi:", sum(datos_transporte$n_valenbisi, na.rm = TRUE), "\n")
+
+```
+
+Al contabilizar el número de paradas o estaciones de cada medio de transporte por distrito, se observa que el número de estaciones de Metrovalencia asignadas a los distritos de Valencia es menor que el número de registros iniciales disponibles en el dataset (143 estaciones). Para comprobar a qué se debe esta diferencia y analizar cómo se distribuyen espacialmente los datos, se realiza una representación gráfica de las tres redes de transporte disponibles: EMT, Metrovalencia y ValenBisi. De esta forma, se puede observar la localización de cada parada o estación y comprobar si existen puntos fuera de la zona de estudio o si hay zonas con una mayor concentración de transporte público.
+
+```{r}
+par(
+  mfrow = c(1,3),
+  mar = c(4,4,3,2)
+)
+
+plot(
+  st_geometry(distritos_unidos),
+  main = "EMT",
+  col = "white",
+  border = "black"
+)
+plot(
+  st_geometry(emt),
+  add = TRUE,
+  col = "blue",
+  pch = 16
+)
+
+plot(
+  st_geometry(fgv),
+  main = "Metrovalencia",
+  col = "red",
+  pch = 16
+)
+plot(
+  st_geometry(distritos_unidos),
+  add = TRUE,
+  border = "black"
+)
+
+plot(
+  st_geometry(distritos_unidos),
+  main = "ValenBisi",
+  col = "white",
+  border = "black"
+)
+plot(
+  st_geometry(valenbisi),
+  add = TRUE,
+  col = "green",
+  pch = 16
+)
 ```
