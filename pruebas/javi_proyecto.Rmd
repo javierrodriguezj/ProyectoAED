@@ -3,3 +3,58 @@ title: "javi_proyecto"
 output: html_document
 ---
 
+# Introducción
+En esta parte vamos a intentar resolver las siguientes preguntas:
+
+- **P1.** ¿Existe correspondencia entre la tipología del punto de estacionamiento y su número de plazas? ¿Dónde hay **atomización** (muchos puntos de pocas plazas) y dónde **macroaparcamientos**?
+- **P2.** ¿Dónde se concentran los **desiertos** de estacionamiento ciclista?
+- **P3.** ¿En qué medida los desiertos de un modo (Valenbisi) quedan **compensados** por la cobertura de otros (autobús EMT y Metrovalencia/FGV)?
+
+```{r paquetes, include=FALSE}
+library(sf)          # geometría vectorial (simple features)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(forcats)
+library(lubridate)
+library(ggplot2)
+library(patchwork)
+library(ggrepel)
+library(scales)
+library(spdep)       # pesos espaciales, I de Moran y LISA
+library(knitr)
+library(kableExtra)
+```
+
+
+```{r parametros}
+DIR_DATOS      <- "../data"
+CRS_M          <- 25830                       # ETRS89 / UTM 30N (metros) deformacion de La Tierra
+MODOS          <- c("Valenbisi", "EMT", "FGV")
+UMBRAL         <- c(Valenbisi = 100, EMT = 300, FGV = 500)   # metros
+#HEX_M          <- 100                         # distancia entre lados opuestos del hexágono
+#BUFFER_BORDE   <- 1000                        # corrección del efecto borde (m)
+#MIN_EST_BARRIO <- 3                           # estaciones mínimas para describir un barrio
+#K_VECINOS      <- 8                           # vecinos de la matriz de pesos kNN
+#K_SENSIB       <- c(4, 12)                    # sensibilidad de la matriz de pesos
+#N_PERM         <- 999                         # permutaciones del I de Moran global
+#N_PERM_LISA    <- 9999                        # permutaciones de los LISA
+#ALFA           <- 0.05
+#BARRIOS_NO_RESID <- c("106", "111")           # La Punta y El Grau (huerta/ZAL y puerto)
+#set.seed(2026)
+```
+
+Cargamos ahora los datos
+
+```{r carga de datos}
+
+crudo <- list(valenbisi = st_read(file.path(DIR_DATOS, "valenbisi.geojson"), quiet = TRUE) |> st_transform(CRS_M),
+              emt = st_read(file.path(DIR_DATOS, "emt.geojson"), quiet = TRUE) |> st_transform(CRS_M),
+              fgv = st_read(file.path(DIR_DATOS, "fgv_paradas.geojson"), quiet = TRUE) |> st_transform(CRS_M),
+              barrios = st_read(file.path(DIR_DATOS, "geom_barrios.geojson"), quiet = TRUE) |> st_transform(CRS_M),
+              distritos = st_read(file.path(DIR_DATOS, "geom_distritos.geojson"), quiet = TRUE) |> st_transform(CRS_M))
+```
+
+
+
+
