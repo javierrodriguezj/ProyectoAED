@@ -33,18 +33,7 @@ Descargamos y leemos los datos (yo dejaría esto a modo de 'anécdota').
 
 Es extraño, que el Ajuntament haya decidido poner *exactamente* 2000 aparcamientos de bicicletas. Vamos a comprobar otra forma de leer los datos (me la encontré por los interneses)
 
-```{# {r Carga de bici 2.0}
-# aparc_bic <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
-# 
-# 
-# 
-# filepath <- paste0(savedir, 'aparcamiento_bici.geojson')
-# if (!file.exists(filepath)) {
-#   st_write(aparc_bic, filepath, delete_dsn = TRUE)
-# }
-# 
-# cat('Nuestros datos tienen', nrow(aparc_bic), ' instancias y ', ncol(aparc_bic), 'variables. Además, hay ', sum(is.na(aparc_bic)),'NA\'s')
-```
+`{# {r Carga de bici 2.0} # aparc_bic <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/206/query?where=1=1&outFields=*&f=geojson', quiet = TRUE) #  #  #  # filepath <- paste0(savedir, 'aparcamiento_bici.geojson') # if (!file.exists(filepath)) { #   st_write(aparc_bic, filepath, delete_dsn = TRUE) # } #  # cat('Nuestros datos tienen', nrow(aparc_bic), ' instancias y ', ncol(aparc_bic), 'variables. Además, hay ', sum(is.na(aparc_bic)),'NA\'s')`
 
 ya decía yo...
 
@@ -500,7 +489,7 @@ ggplot() +
   )
 ```
 
-# Aquí empiezo:
+# Preparación de los datos:
 
 En primer lugar, se va a crear un DataFrame en el que cada fila corresponda a un distrito de Valencia y contenga la densidad de población junto con el número de paradas o estaciones disponibles de cada medio de transporte público.
 
@@ -527,11 +516,15 @@ valenbisi_n <- valenbisi_distrito %>% st_drop_geometry() %>% count(coddistrit, n
 #Finalmente, unimos estos datos obtenidos a la tabla que hemos creado anteriormente
 datos_transporte <- densidad_distrito %>% left_join(emt_n, by = "coddistrit") %>% left_join(metro_n, by = "coddistrit") %>% left_join(valenbisi_n, by = "coddistrit")
 
-#Cotamos el nuemro de paradas de cada transporte:
+```
+
+# Exploración inicial:
+
+```{r}
+#Contamos el nuemro de paradas de cada transporte:
 cat("Total de paradas EMT:", sum(datos_transporte$n_emt, na.rm = TRUE), "\n")
 cat("Total de estaciones MetroValencia:", sum(datos_transporte$n_metro, na.rm = TRUE), "\n")
 cat("Total de estaciones Valenbisi:", sum(datos_transporte$n_valenbisi, na.rm = TRUE), "\n")
-
 ```
 
 Al contabilizar el número de paradas o estaciones de cada medio de transporte por distrito, se observa que el número de estaciones de Metrovalencia asignadas a los distritos de Valencia es menor que el número de registros iniciales disponibles en el dataset (143 estaciones). Para comprobar a qué se debe esta diferencia y analizar cómo se distribuyen espacialmente los datos, se realiza una representación gráfica de las tres redes de transporte disponibles: EMT, Metrovalencia y ValenBisi. De esta forma, se puede observar la localización de cada parada o estación y comprobar si existen puntos fuera de la zona de estudio o si hay zonas con una mayor concentración de transporte público.
@@ -582,3 +575,31 @@ plot(
 ```
 
 Al observar la distribución de las estaciones de Metrovalencia, se comprueba que algunos puntos se encuentran fuera de los distritos de Valencia. Esto explica la diferencia entre los 143 registros iniciales del dataset y el número de estaciones finalmente asignadas a cada distrito. Por ello, para el análisis posterior solo se tendrán en cuenta las estaciones situadas dentro del área de estudio.
+
+# Análisis
+## ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
+
+La población de Valencia no se distribuye de manera uniforme entre sus distritos, y de la misma forma, las redes de transporte público pueden presentar diferencias en su disponibilidad según la zona. Por ello, se plantea analizar si los distritos con mayor número de habitantes son también aquellos que disponen de una mayor oferta de transporte público, o si existen zonas donde ambas distribuciones no coinciden. Para ello, se estudiará la relación entre la población y la cantidad de paradas o estaciones de EMT, Metrovalencia y ValenBisi.
+
+### ¿Cómo se distribuye la población en Valencia?
+
+En primer lugar, se va a analizar la distribución de la densidad de población de los distritos de la ciudad de Valencia. Para ello, se grafica un mapa de Valencia coloreado en base a la densidad.
+
+```{r}
+ggplot(pob) +
+  geom_sf(aes(fill = densidad_hab_ha)) +
+  coord_sf(
+    xlim = c(-0.43, -0.31),
+    ylim = c(39.42, 39.53)
+  ) + 
+  scale_fill_gradient(
+    low = "lightblue",
+    high = "darkblue"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Densidad de población en el centro de Valencia",
+    fill = "Habitantes/ha"
+  )
+```
+Como se puede observar en el mapa, los distritos con menor densidad de población se muestran en un tono más claro y se van oscureciendo a medida que la densidad aumenta. Esto nos permite ver a simple vista qué distritos deberían necesitar, en principio, una mayor cobertura de transporte público, algo que analizaremos más adelante para ver si realmente se cumple.
