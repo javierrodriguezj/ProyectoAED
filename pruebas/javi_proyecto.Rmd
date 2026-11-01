@@ -24,37 +24,98 @@ library(scales)
 library(spdep)       # pesos espaciales, I de Moran y LISA
 library(knitr)
 library(kableExtra)
+library(magrittr)
 ```
 
 
 ```{r parametros}
 DIR_DATOS      <- "../data"
 CRS_M          <- 25830                       # ETRS89 / UTM 30N (metros) deformacion de La Tierra
-MODOS          <- c("Valenbisi", "EMT", "FGV")
 UMBRAL         <- c(Valenbisi = 100, EMT = 300, FGV = 500)   # metros
-#HEX_M          <- 100                         # distancia entre lados opuestos del hexágono
-#BUFFER_BORDE   <- 1000                        # corrección del efecto borde (m)
-#MIN_EST_BARRIO <- 3                           # estaciones mínimas para describir un barrio
-#K_VECINOS      <- 8                           # vecinos de la matriz de pesos kNN
-#K_SENSIB       <- c(4, 12)                    # sensibilidad de la matriz de pesos
-#N_PERM         <- 999                         # permutaciones del I de Moran global
-#N_PERM_LISA    <- 9999                        # permutaciones de los LISA
-#ALFA           <- 0.05
-#BARRIOS_NO_RESID <- c("106", "111")           # La Punta y El Grau (huerta/ZAL y puerto)
-#set.seed(2026)
+BUFFER_BORDE   <- 1000                        # corrección del 
+COL_MODO     <- c(Valenbisi = "#2a78d6", EMT = "#eb6834", FGV = "#1baf7a")
 ```
 
 Cargamos ahora los datos
 
 ```{r carga de datos}
+valenbisi <- st_read(file.path(DIR_DATOS, "valenbisi.geojson"), quiet = TRUE) |> st_transform(CRS_M)
 
-crudo <- list(valenbisi = st_read(file.path(DIR_DATOS, "valenbisi.geojson"), quiet = TRUE) |> st_transform(CRS_M),
-              emt = st_read(file.path(DIR_DATOS, "emt.geojson"), quiet = TRUE) |> st_transform(CRS_M),
-              fgv = st_read(file.path(DIR_DATOS, "fgv_paradas.geojson"), quiet = TRUE) |> st_transform(CRS_M),
-              barrios = st_read(file.path(DIR_DATOS, "geom_barrios.geojson"), quiet = TRUE) |> st_transform(CRS_M),
-              distritos = st_read(file.path(DIR_DATOS, "geom_distritos.geojson"), quiet = TRUE) |> st_transform(CRS_M))
+emt <- st_read(file.path(DIR_DATOS, "emt.geojson"), quiet = TRUE) |> st_transform(CRS_M)
+
+fgv <- st_read(file.path(DIR_DATOS, "fgv_paradas.geojson"), quiet = TRUE) |> st_transform(CRS_M)
+
+barrios <- st_read(file.path(DIR_DATOS, "geom_barrios.geojson"), quiet = TRUE) |> st_transform(CRS_M)
+
+distritos <- st_read(file.path(DIR_DATOS, "geom_distritos.geojson"), quiet = TRUE) |> st_transform(CRS_M)
+```
+
+Como Valenbisi es un servicio que se restringe a València, mientras que FGV se extiende fuera del término municipal valenciano. 
+
+```{r}
+municipio <- st_union(distritos)
+
+vb_fuera <- sum(lengths(st_intersects(valenbisi, municipio)) == 0)
+cat('Hay', vb_fuera, 'paradas de Valenbisi fuera de València.\n')
+emt_fuera <- sum(lengths(st_intersects(emt, municipio)) == 0)
+cat('Hay', emt_fuera, 'paradas de EMT fuera de València.\n')
+fgv_fuera <- sum(lengths(st_intersects(fgv, municipio)) == 0)
+cat('Hay', fgv_fuera, 'paradas de FGV fuera de València.\n')
 ```
 
 
+# Datos tidy
 
+```{r}
+barrios %<>%
+  transmute(coddistrit = as.integer(coddistrit), codbarrio = as.integer(codbarrio), area_km2 = as.numeric(st_area(geometry)) / 1e6, nombre)
+```
 
+```{r}
+distritos %<>%
+  transmute(coddistrit = as.integer(coddistrit), area_km2 = as.numeric(st_area(geometry)) / 1e6, nombre)
+
+```
+
+```{r}
+valenbisi %<>%
+  transmute(id= as.character(number),plazas= as.integer(total))
+```
+
+Unimos de alguna forma toda la info en una misma tabla
+```{r}
+paradas <- bind_rows(
+  valenbisi |> transmute(modo = "Valenbisi", id),
+  emt       |> transmute(modo = "EMT", id = as.character(id_parada)),
+  fgv       |> transmute(modo = "FGV", id = as.character(codigo))
+) |>
+  mutate(modo = factor(modo, levels = MODOS))
+
+table(paradas$modo)
+```
+
+```{r}
+# Distritos que tienen al menos una estación Valenbisi
+vb_distrito <- st_join(valenbisi, distritos["coddistrit"])
+DISTRITOS_DOMINIO <- sort(unique(vb_distrito$coddistrit))
+DISTRITOS_DOMINIO
+
+dominio      <- distritos |> filter(coddistrit %in% DISTRITOS_DOMINIO) |> st_union()
+zona_calculo <- st_buffer(dominio, BUFFER_BORDE)
+```
+
+```{r}
+distritos_mapa <- distritos |> mutate(dentro = coddistrit %in% DISTRITOS_DOMINIO)
+caja <- st_bbox(zona_calculo)
+
+ggplot() +
+  geom_sf(data = distritos_mapa, aes(fill = dentro), colour = "grey75", linewidth = 0.25) +
+  geom_sf(data = st_sf(geometry = zona_calculo), fill = NA, colour = "grey50", linetype = "dashed") +
+  geom_sf(data = paradas, aes(colour = modo), size = 0.45, show.legend = FALSE) +
+  facet_wrap(~ modo) +
+  scale_fill_manual(values = c(`TRUE` = "white", `FALSE` = "grey92"), guide = "none") +
+  scale_colour_manual(values = COL_MODO) +
+  coord_sf(xlim = caja[c("xmin", "xmax")], ylim = caja[c("ymin", "ymax")], expand = FALSE) +
+  theme_void() +
+  theme(strip.text = element_text(face = "bold", hjust = 0))
+```
