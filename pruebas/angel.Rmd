@@ -11,6 +11,7 @@ library(dplyr)
 library(tidyr)
 library(lubridate)
 library(stringr)
+library(ggplot2)
 ```
 
 # Techically.. data
@@ -97,4 +98,275 @@ rm(b, d)
 
 ```{r}
 
+```
+
+# ¿Cercanía bicis-transporte publico?
+
+```{r}
+mat.dist.emt <- st_distance(df.emt, df.valenbisi)
+rownames(mat.dist.emt) <- df.emt$denominacion
+colnames(mat.dist.emt) <- df.valenbisi$name
+
+mat.dist.fgv <- st_distance(df.fgv_paradas, df.valenbisi)
+rownames(mat.dist.fgv) <- df.fgv_paradas$nombre
+colnames(mat.dist.fgv) <- df.valenbisi$name
+```
+
+Dibujamos las paradas en el mapa.
+
+GEMINI:
+
+```{r}
+library(sf)
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(stringr)
+library(ggplot2)
+
+ggplot() +
+  # Capa base: Mapa de distritos/barrios
+  geom_sf(data = df.pob, fill = "gray90", color = "white", linewidth = 0.3) +
+  
+  # Capas de puntos de transporte
+  geom_sf(data = df.emt, aes(color = "EMT"), size = 0.8, alpha = 0.5) +
+  geom_sf(data = df.fgv_paradas, aes(color = "FGV"), size = 1.5, alpha = 0.8) +
+  geom_sf(data = df.valenbisi, aes(color = "ValenBisi"), size = 1.5, alpha = 0.9) +
+  
+  # Personalización de colores y leyenda
+  scale_color_manual(
+    name = "Transporte",
+    values = c("EMT" = "#E69F00", "FGV" = "#56B4E9", "ValenBisi" = "#009E73")
+  ) +
+  
+  # Diseño del mapa
+  theme_void() +
+  theme(legend.position = "right") +
+  labs(
+    title = "Distribución del Transporte Público en Valencia",
+    subtitle = "Estaciones de ValenBisi, EMT y FGV"
+  )
+```
+
+```{r}
+df.pob %>%
+  group_by(nombre_distrito) %>%
+  summarise() %>%
+  ggplot() +
+  geom_sf(color = "black") +
+  coord_sf(ylim = c(39.42, 39.53)) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Distritos de Valencia")
+```
+
+```{r}
+df.fgv_lineas <- df.fgv_paradas %>%
+  unnest(lineas) %>%
+  group_by(lineas) %>%
+  group_modify(~ {
+    if (nrow(.x) < 2) return(st_sf(geometry = st_sfc(crs = st_crs(.x))))
+    
+    # Matriz de distancias sin autocomparación
+    d <- st_distance(.x)
+    diag(d) <- Inf
+    
+    # Generar tramos conectando cada parada con sus 2 vecinas más cercanas
+    coords <- st_coordinates(.x)
+    tramos <- unlist(lapply(1:nrow(.x), function(i) {
+      vecinos <- order(d[i, ])[1:min(2, ncol(d))]
+      lapply(vecinos, function(j) st_linestring(coords[c(i, j), 1:2]))
+    }), recursive = FALSE)
+    
+    st_sf(geometry = st_sfc(tramos, crs = st_crs(.x)))
+  }) %>%
+  ungroup() %>%
+  st_as_sf()
+
+df.pob %>%
+  group_by(nombre_distrito) %>%
+  summarise() %>%
+  ggplot() +
+  geom_sf(color = "black", fill = "gray90") +
+  #geom_sf(data = df.emt, aes(color = "EMT"), size = 0.7, alpha = 0.5) +
+  geom_sf(data = df.fgv_paradas, aes(color = "FGV"), size = 0.7, alpha = 0.9) +
+  geom_sf(data = df.fgv_lineas, aes(color = lineas), linewidth = 0.2) +
+  geom_sf(data = df.valenbisi, aes(color = "ValenBisi"), size = 0.7, alpha = 0.9) +
+  scale_color_manual(
+    name = "Transporte",
+    values = c("EMT" = "#c70c30", "FGV" = "#fabd00", "ValenBisi" = "#283d6b")
+  ) +
+  coord_sf(xlim = c(-0.43, -0.30), ylim = c(39.42, 39.53)) +
+  theme_minimal() +
+  theme(legend.position = "right", axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Distritos de Valencia y Transporte Público")
+
+df.pob %>%
+  group_by(nombre_distrito) %>%
+  summarise() %>%
+  ggplot() +
+  geom_sf(color = "black", fill = "gray90") +
+  geom_sf(data = df.emt, aes(color = "EMT"), size = 0.7, alpha = 0.5) +
+  #geom_sf(data = df.fgv_paradas, aes(color = "FGV"), size = 0.7, alpha = 0.9) +
+  #geom_sf(data = df.fgv_lineas, aes(color = lineas), linewidth = 0.2) +
+  geom_sf(data = df.valenbisi, aes(color = "ValenBisi"), size = 1.5, alpha = 0.9) +
+  scale_color_manual(
+    name = "Transporte",
+    values = c("EMT" = "#c70c30", "FGV" = "#fabd00", "ValenBisi" = "#283d6b")
+  ) +
+  coord_sf(xlim = c(-0.43, -0.30), ylim = c(39.42, 39.53)) +
+  theme_minimal() +
+  theme(legend.position = "right", axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Distritos de Valencia y Transporte Público")
+```
+
+Abreviando:
+
+```{r}
+# 1. Pre-calculamos la base para no repetirlo
+base_pob <- df.pob %>% group_by(nombre_distrito) %>% summarise()
+
+# 2. Guardamos estilos y límites en una lista (coord_sf va aquí)
+capas_comunes <- list(
+  scale_color_manual("Transporte", values = c(EMT="#c70c30", FGV="#fabd00", ValenBisi="#283d6b")),
+  theme_minimal(),
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)),
+  labs(title = "Distritos de Valencia y transporte público"),
+  coord_sf(xlim = c(-0.43, -0.30), ylim = c(39.42, 39.53)) # Al aplicarlo al final, el zoom no se rompe
+)
+
+# 3. Gráfico 1 (FGV + ValenBisi)
+ggplot(base_pob) + geom_sf(color = "black", fill = "gray90") +
+  geom_sf(data = df.fgv_paradas, aes(color = "FGV"), size = 0.7, alpha = 0.9) +
+  geom_sf(data = df.fgv_lineas, aes(color = lineas), linewidth = 0.2) +
+  geom_sf(data = df.valenbisi, aes(color = "ValenBisi"), size = 0.7, alpha = 0.9) +
+  capas_comunes
+
+# 4. Gráfico 2 (EMT + ValenBisi)
+ggplot(base_pob) + geom_sf(color = "black", fill = "gray90") +
+  geom_sf(data = df.emt, aes(color = "EMT"), size = 0.7, alpha = 0.5) +
+  geom_sf(data = df.valenbisi, aes(color = "ValenBisi"), size = 1.5, alpha = 0.9) +
+  capas_comunes
+```
+
+## Distribución de la distancia más corta
+
+GEMINI:
+
+```{r}
+library(ggplot2)
+
+# 1. Extraer la distancia mínima a la estación de Valenbisi más cercana por fila
+# as.numeric() elimina los metadatos de unidades (metros) para evitar errores en ggplot
+min_dist_emt <- as.numeric(apply(mat.dist.emt, 1, min))
+min_dist_fgv <- as.numeric(apply(mat.dist.fgv, 1, min))
+
+# 2. Crear un dataframe combinado para facilitar la gráfica
+df_distancias <- data.frame(
+  Transporte = c(rep("EMT", length(min_dist_emt)), rep("FGV", length(min_dist_fgv))),
+  Distancia_Minima = c(min_dist_emt, min_dist_fgv)
+)
+
+# 3. GRÁFICO 1: Curva de densidad
+ggplot(df_distancias, aes(x = Distancia_Minima, fill = Transporte)) +
+  geom_density(alpha = 0.6) +
+  scale_fill_manual(values = c("EMT" = "#E69F00", "FGV" = "#56B4E9")) +
+  xlim(0, 1500) + # Limitamos a 1.5km para mejor visualización
+  labs(
+    title = "Distribución de la distancia al Valenbisi más cercano",
+    x = "Distancia en metros",
+    y = "Densidad"
+  ) +
+  theme_minimal()
+
+# 4. GRÁFICO 2: Distribución Acumulada (ECDF)
+ggplot(df_distancias, aes(x = Distancia_Minima, color = Transporte)) +
+  stat_ecdf(geom = "step", size = 1) +
+  scale_color_manual(values = c("EMT" = "#E69F00", "FGV" = "#56B4E9")) +
+  geom_vline(xintercept = 300, linetype = "dashed", color = "red", alpha = 0.5) +
+  xlim(0, 1000) +
+  labs(
+    title = "Porcentaje de paradas con Valenbisi a distancia X",
+    subtitle = "La línea roja indica el umbral de 300 metros",
+    x = "Distancia (metros)",
+    y = "Porcentaje Acumulado (0 a 1)"
+  ) +
+  theme_minimal()
+```
+
+YO:
+
+```{r}
+min_dist_emt <- as.numeric(apply(mat.dist.emt, 1, min))
+min_dist_fgv <- as.numeric(apply(mat.dist.fgv, 1, min))
+
+df_distancias <- data.frame(
+  Transporte = c(rep("EMT", length(min_dist_emt)), rep("FGV", length(min_dist_fgv))),
+  distancia_minima = c(min_dist_emt, min_dist_fgv)
+)
+
+ggplot(df_distancias, aes(x = distancia_minima, fill = Transporte)) +
+  geom_density(alpha = 0.6) +
+  scale_fill_manual(values = c("EMT" = "#c70c30", "FGV" = "#fabd00")) +
+  scale_x_continuous(
+    limits = c(0, 1500), 
+    breaks = seq(0, 1500, by = 250)
+  ) +
+  labs(
+    title = "Distribución de la distancia al Valenbisi más cercano",
+    x = "Distancia (m)",
+    y = "Densidad"
+  ) + 
+  theme_minimal()
+```
+
+Conclusión: En su mayoría, hay menos de 150 metros hasta la parada de ValenBisi más cercana (bien!). Aunque esto nos deja con una pregunta: a qué corresponden las paradas más lejanas? (+300 metros?)
+
+Tras ver los mapas, ahora queda claro que las colas corresponden a las paradas ubicadas fuera del centro de Valencia, que es donde están todas las paradas de ValenBisi. En general, ValenBisi intenta conectar el centreo urbano, mientras que EMT y FGV también se extienden a los alderedores.
+
+```{r}
+ggplot(df_distancias, aes(x = distancia_minima, color = Transporte)) +
+  stat_ecdf(geom = "step", size = 1) +
+  scale_color_manual(values = c("EMT" = "#c70c30", "FGV" = "#fabd00")) +
+  geom_vline(xintercept = 250, linetype = "dashed", color = "black", alpha = 0.5) +
+  xlim(0, 1000) +
+  labs(
+    title = "Porcentaje de paradas según la distancia mínima a una ValenBisi",
+    subtitle = "La línea vertical indica el umbral de 250 metros",
+    x = "Distancia (m)",
+    y = "Porcentaje acumulado"
+  ) +
+  theme_minimal()
+```
+
+## DEPRECATED
+
+```{r}
+# heatmap
+library(ggplot2)
+library(tibble)
+
+# Función para convertir la matriz sf a numérica, pasar a formato largo y graficar
+plot_heatmap <- function(mat, title) {
+  # Convertir unidades sf a matriz numérica estándar
+  mat_num <- matrix(as.numeric(mat), nrow = nrow(mat), dimnames = dimnames(mat))
+  
+  # Pivotar a formato largo usando tidyr (ya cargada en tu entorno)
+  df_heat <- as.data.frame(mat_num) %>%
+    rownames_to_column(var = "Origen") %>%
+    pivot_longer(-Origen, names_to = "Destino", values_to = "Distancia")
+  
+  # Heatmap (usamos theme_void para evitar que colapsen los cientos de nombres en los ejes)
+  ggplot(df_heat, aes(x = Destino, y = Origen, fill = Distancia)) +
+    geom_tile() +
+    scale_fill_viridis_c(option = "plasma", direction = -1) +
+    theme_void() + 
+    theme(legend.position = "right", plot.title = element_text(hjust = 0.5)) +
+    labs(title = title, fill = "Metros")
+}
+
+# Generar ambos heatmaps
+plot_heatmap(mat.dist.fgv, "Distancias: Paradas FGV vs Valenbisi")
+plot_heatmap(mat.dist.emt, "Distancias: Paradas EMT vs Valenbisi")
 ```
