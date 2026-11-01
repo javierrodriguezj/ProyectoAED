@@ -577,6 +577,7 @@ plot(
 Al observar la distribución de las estaciones de Metrovalencia, se comprueba que algunos puntos se encuentran fuera de los distritos de Valencia. Esto explica la diferencia entre los 143 registros iniciales del dataset y el número de estaciones finalmente asignadas a cada distrito. Por ello, para el análisis posterior solo se tendrán en cuenta las estaciones situadas dentro del área de estudio.
 
 # Análisis
+
 ## ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
 La población de Valencia no se distribuye de manera uniforme entre sus distritos, y de la misma forma, las redes de transporte público pueden presentar diferencias en su disponibilidad según la zona. Por ello, se plantea analizar si los distritos con mayor número de habitantes son también aquellos que disponen de una mayor oferta de transporte público, o si existen zonas donde ambas distribuciones no coinciden. Para ello, se estudiará la relación entre la población y la cantidad de paradas o estaciones de EMT, Metrovalencia y ValenBisi.
@@ -602,4 +603,7 @@ ggplot(pob) +
     fill = "Habitantes/ha"
   )
 ```
-Como se puede observar en el mapa, los distritos con menor densidad de población se muestran en un tono más claro y se van oscureciendo a medida que la densidad aumenta. Esto nos permite ver a simple vista qué distritos deberían necesitar, en principio, una mayor cobertura de transporte público, algo que analizaremos más adelante para ver si realmente se cumple.
+
+Como se puede observar en el mapa, los distritos con menor densidad de población se muestran en un tono más claro y se van oscureciendo a medida que la densidad aumenta. Esto nos permite ver a simple vista qué distritos deberían necesitar, en principio, una mayor cobertura de transporte público, algo que analizaremos a continuación para ver si realmente se cumple.
+
+### ¿Cómo se distribuyen las redes de transporte?
