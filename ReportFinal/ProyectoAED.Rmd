@@ -122,9 +122,9 @@ rm(list = ls())
 if (!require("pacman")) install.packages("pacman")
 
 # Carga e instala automáticamente solo las librerías faltantes
-pacman::p_load(sf, readxl, tidyr, stringr, dyplr, lubridate)
+pacman::p_load(sf, readxl, tidyr, stringr, dyplr, lubridate, ggplot2)
 
-invisible(lapply(c("sf", "readxl", "dplyr", "tidyr", "stringr", "lubridate"), library, character.only = TRUE))
+invisible(lapply(c("sf", "readxl", "dplyr", "tidyr", "stringr", "lubridate", "ggplot2"), library, character.only = TRUE))
 ```
 
 # Descarga de los datos (*Raw data*)
