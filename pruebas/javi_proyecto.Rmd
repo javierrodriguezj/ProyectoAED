@@ -31,23 +31,26 @@ library(magrittr)
 ```{r parametros}
 DIR_DATOS      <- "../data"
 CRS_M          <- 25830                       # ETRS89 / UTM 30N (metros) deformacion de La Tierra
-UMBRAL         <- c(Valenbisi = 100, EMT = 300, FGV = 500)   # metros
+UMBRAL         <- c(Valenbisi = 300, EMT = 300, FGV = 500)   # metros
 BUFFER_BORDE   <- 1000                        # corrección del 
 COL_MODO     <- c(Valenbisi = "#2a78d6", EMT = "#eb6834", FGV = "#1baf7a")
+HEX_M          <- 100                         # distancia entre lados opuestos del hexágono
+
+MODOS <- c('Valenbisi', 'EMT', 'FGV')
 ```
 
 Cargamos ahora los datos
 
 ```{r carga de datos}
-valenbisi <- st_read(file.path(DIR_DATOS, "valenbisi.geojson"), quiet = TRUE) |> st_transform(CRS_M)
+valenbisi <- st_read(file.path(DIR_DATOS, "valenbisi.geojson"), quiet = TRUE) %>% st_transform(CRS_M)
 
-emt <- st_read(file.path(DIR_DATOS, "emt.geojson"), quiet = TRUE) |> st_transform(CRS_M)
+emt <- st_read(file.path(DIR_DATOS, "emt.geojson"), quiet = TRUE) %>% st_transform(CRS_M)
 
-fgv <- st_read(file.path(DIR_DATOS, "fgv_paradas.geojson"), quiet = TRUE) |> st_transform(CRS_M)
+fgv <- st_read(file.path(DIR_DATOS, "fgv_paradas.geojson"), quiet = TRUE) %>% st_transform(CRS_M)
 
-barrios <- st_read(file.path(DIR_DATOS, "geom_barrios.geojson"), quiet = TRUE) |> st_transform(CRS_M)
+barrios <- st_read(file.path(DIR_DATOS, "geom_barrios.geojson"), quiet = TRUE) %>% st_transform(CRS_M)
 
-distritos <- st_read(file.path(DIR_DATOS, "geom_distritos.geojson"), quiet = TRUE) |> st_transform(CRS_M)
+distritos <- st_read(file.path(DIR_DATOS, "geom_distritos.geojson"), quiet = TRUE) %>% st_transform(CRS_M)
 ```
 
 Como Valenbisi es un servicio que se restringe a València, mientras que FGV se extiende fuera del término municipal valenciano. 
@@ -68,7 +71,7 @@ cat('Hay', fgv_fuera, 'paradas de FGV fuera de València.\n')
 
 ```{r}
 barrios %<>%
-  transmute(coddistrit = as.integer(coddistrit), codbarrio = as.integer(codbarrio), area_km2 = as.numeric(st_area(geometry)) / 1e6, nombre)
+  transmute(coddistrit = as.integer(coddistrit),coddistbar = as.integer(coddistbar), codbarrio = as.integer(codbarrio), area_km2 = as.numeric(st_area(geometry)) / 1e6, nombre)
 ```
 
 ```{r}
@@ -85,10 +88,10 @@ valenbisi %<>%
 Unimos de alguna forma toda la info en una misma tabla
 ```{r}
 paradas <- bind_rows(
-  valenbisi |> transmute(modo = "Valenbisi", id),
-  emt       |> transmute(modo = "EMT", id = as.character(id_parada)),
-  fgv       |> transmute(modo = "FGV", id = as.character(codigo))
-) |>
+  valenbisi %>% transmute(modo = "Valenbisi", id),
+  emt       %>% transmute(modo = "EMT", id = as.character(id_parada)),
+  fgv       %>% transmute(modo = "FGV", id = as.character(codigo))
+) %>%
   mutate(modo = factor(modo, levels = MODOS))
 
 table(paradas$modo)
@@ -100,12 +103,12 @@ vb_distrito <- st_join(valenbisi, distritos["coddistrit"])
 DISTRITOS_DOMINIO <- sort(unique(vb_distrito$coddistrit))
 DISTRITOS_DOMINIO
 
-dominio      <- distritos |> filter(coddistrit %in% DISTRITOS_DOMINIO) |> st_union()
+dominio      <- distritos %>% filter(coddistrit %in% DISTRITOS_DOMINIO) %>% st_union()
 zona_calculo <- st_buffer(dominio, BUFFER_BORDE)
 ```
 
 ```{r}
-distritos_mapa <- distritos |> mutate(dentro = coddistrit %in% DISTRITOS_DOMINIO)
+distritos_mapa <- distritos %>% mutate(dentro = coddistrit %in% DISTRITOS_DOMINIO)
 caja <- st_bbox(zona_calculo)
 
 ggplot() +
@@ -119,3 +122,16 @@ ggplot() +
   theme_void() +
   theme(strip.text = element_text(face = "bold", hjust = 0))
 ```
+### Soporte común: rejilla hexagonal
+
+Las paradas son puntos y los barrios son polígonos de tamaños muy dispares (de menos de 0,1 km² a más de 6 km²). Para medir desiertos hace falta un soporte **independiente** de ambos. Se cubre el dominio con una rejilla de hexágonos de `r HEX_M` m entre lados opuestos y se conservan los hexágonos cuyo centroide cae dentro del dominio. Todos tienen la misma área, por lo que **la proporción de hexágonos es la proporción de superficie**. Se prefieren hexágonos a cuadrados porque sus seis vecinos están a la misma distancia y su menor relación perímetro/área reduce el sesgo de borde.
+
+```{r}
+rejilla    <- st_make_grid(dominio, cellsize = HEX_M, square = FALSE)
+centroides <- st_centroid(rejilla)
+dentro     <- lengths(st_within(centroides, dominio)) > 0
+```
+
+
+
+
