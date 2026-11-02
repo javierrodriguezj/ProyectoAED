@@ -4,11 +4,11 @@ output: html_document
 ---
 
 # Introducción
+
 En esta parte vamos a intentar resolver las siguientes preguntas:
 
 - **P1.** ¿Existe correspondencia entre la tipología del punto de estacionamiento y su número de plazas? ¿Dónde hay **atomización** (muchos puntos de pocas plazas) y dónde **macroaparcamientos**?
-- **P2.** ¿Dónde se concentran los **desiertos** de estacionamiento ciclista?
-- **P3.** ¿En qué medida los desiertos de un modo (Valenbisi) quedan **compensados** por la cobertura de otros (autobús EMT y Metrovalencia/FGV)?
+- **P2.** ¿Dónde se concentran los **desiertos** de estacionamiento ciclista? ¿Estos desiertos están cubiertos por otros transportes?
 
 ```{r paquetes, include=FALSE}
 library(sf)          # geometría vectorial (simple features)
@@ -27,25 +27,26 @@ library(kableExtra)
 library(magrittr)
 ```
 
-
 ```{r parametros}
 DIR_DATOS      <- "../data"
 CRS_M          <- 25830                       # ETRS89 / UTM 30N (metros) deformacion de La Tierra
-UMBRAL         <- c(Valenbisi = 200, EMT = 300, FGV = 500)   # metros
+UMBRAL         <- c(Valenbisi = 300, EMT = 300, FGV = 500)   # metros
 BUFFER_BORDE   <- 1000                        # corrección del 
-COL_MODO     <- c(Valenbisi = "#2a78d6", EMT = "#eb6834", FGV = "#1baf7a")
-HEX_M          <- 100                         # distancia entre lados opuestos del hexágono
-
+COL_CLASE <- c(Atomizado = "#6250d6", Macroaparcamiento = "#eda100",
+               Intermedio = "grey75", `Menos de 3 estaciones` = "grey95")
+COL_MODO     <- c(Valenbisi = "#2a78d6", EMT = "#E2001A", FGV = "#FCD116")
+HEX_M          <- 50                       # distancia entre lados opuestos del hexágono
 MODOS <- c('Valenbisi', 'EMT', 'FGV')
 ```
 
-Cargamos ahora los datos
+Cargamos los datos que necesitamos. Como vamos a calcular distancias transformamos los datos de longitud y latitud a UTM 30N para poder usar metros.
 
 ```{r carga de datos}
 valenbisi <- st_read(file.path(DIR_DATOS, "valenbisi.geojson"), quiet = TRUE) %>% st_transform(CRS_M)
+#sapply(valenbisi, function(x) class(x)[1])  
 
 emt <- st_read(file.path(DIR_DATOS, "emt.geojson"), quiet = TRUE) %>% st_transform(CRS_M)
-
+#head(emt)
 fgv <- st_read(file.path(DIR_DATOS, "fgv_paradas.geojson"), quiet = TRUE) %>% st_transform(CRS_M)
 
 barrios <- st_read(file.path(DIR_DATOS, "geom_barrios.geojson"), quiet = TRUE) %>% st_transform(CRS_M)
@@ -53,7 +54,7 @@ barrios <- st_read(file.path(DIR_DATOS, "geom_barrios.geojson"), quiet = TRUE) %
 distritos <- st_read(file.path(DIR_DATOS, "geom_distritos.geojson"), quiet = TRUE) %>% st_transform(CRS_M)
 ```
 
-Como Valenbisi es un servicio que se restringe a València, mientras que FGV se extiende fuera del término municipal valenciano. 
+Valenbisi solo existe dentro de València, mientras que EMT y FGV tienen paradas fuera del término municipal. Las mantenemos porque una parada de fuera puede dar servicio a un punto de dentro: si las quitáramos, aparecerían desiertos falsos junto al límite municipal.
 
 ```{r}
 municipio <- st_union(distritos)
@@ -66,8 +67,9 @@ fgv_fuera <- sum(lengths(st_intersects(fgv, municipio)) == 0)
 cat('Hay', fgv_fuera, 'paradas de FGV fuera de València.\n')
 ```
 
-
 # Datos tidy
+
+Notamos que los códigos de barrio y de distrito en los dataframes de *barrios* y *distritos* están en formato chr. Además los `NA` que teníamos en ambos data frames se refieren porque no están calculadas las áreas. Entonces, decidimos convertir a entero y recalcular las áreas a partir de los polígonos.
 
 ```{r}
 barrios %<>%
@@ -81,11 +83,12 @@ distritos %<>%
 ```
 
 ```{r}
-valenbisi %<>%
+valenbisi %<>% #nos quedamos solo con el número de plazas y el id
   transmute(id= as.character(number),plazas= as.integer(total))
 ```
 
-Unimos de alguna forma toda la info en una misma tabla
+Ahora, unimos todas las paradas en un dataframe distinguiendo mediante factores los tipos de transporte
+
 ```{r}
 paradas <- bind_rows(
   valenbisi %>% transmute(modo = "Valenbisi", id),
@@ -93,18 +96,21 @@ paradas <- bind_rows(
   fgv       %>% transmute(modo = "FGV", id = as.character(codigo))
 ) %>%
   mutate(modo = factor(modo, levels = MODOS))
-
 table(paradas$modo)
+
 ```
+
+Veamos cuales distritos tienen al menos una estación de Valenbisi para poder establecer la frontera de nuestro mapa
 
 ```{r}
 # Distritos que tienen al menos una estación Valenbisi
-vb_distrito <- st_join(valenbisi, distritos["coddistrit"])
+vb_distrito <- st_join(valenbisi, distritos["coddistrit"]) #comprueba si el punto valenbisi está dentro del polígono del distrito y añade el código del distrito
+
 DISTRITOS_DOMINIO <- sort(unique(vb_distrito$coddistrit))
-DISTRITOS_DOMINIO
+cat('Los distritos',distritos %>% filter(!coddistrit %in% DISTRITOS_DOMINIO) %>%pull(nombre) %>% unique())
 
 dominio      <- distritos %>% filter(coddistrit %in% DISTRITOS_DOMINIO) %>% st_union()
-zona_calculo <- st_buffer(dominio, BUFFER_BORDE)
+zona_calculo <- st_buffer(dominio, BUFFER_BORDE) #nos crea un polígono con un borde
 ```
 
 ```{r}
@@ -122,59 +128,11 @@ ggplot() +
   theme_void() +
   theme(strip.text = element_text(face = "bold", hjust = 0))
 ```
-### Soporte común: rejilla hexagonal
-
-Las paradas son puntos y los barrios son polígonos de tamaños muy dispares (de menos de 0,1 km² a más de 6 km²). Para medir desiertos hace falta un soporte **independiente** de ambos. Se cubre el dominio con una rejilla de hexágonos de `r HEX_M` m entre lados opuestos y se conservan los hexágonos cuyo centroide cae dentro del dominio. Todos tienen la misma área, por lo que **la proporción de hexágonos es la proporción de superficie**. Se prefieren hexágonos a cuadrados porque sus seis vecinos están a la misma distancia y su menor relación perímetro/área reduce el sesgo de borde.
-
-
-
-```{r}
-rejilla <- st_make_grid(dominio, cellsize = 30, square = FALSE)
-centros <- st_centroid(rejilla)
-dentro  <- lengths(st_within(centros, dominio)) > 0
-centros <- centros[dentro]#  nos quedamos con los que tienen el centro dentro del dominio
-```
-
-## Desiertos
-
-```{r}
-#distancias entre centros de hexágonos y modos de transporte
-dist_vb  <- apply(st_distance(centros, filter(paradas, modo == "Valenbisi")), 1, min)
-dist_emt <- apply(st_distance(centros, filter(paradas, modo == "EMT")), 1, min)
-dist_fgv <- apply(st_distance(centros, filter(paradas, modo == "FGV")), 1, min)
-
-# cobertura de cada modo y situación de cada hexágono
-hex <- st_sf(geometry = rejilla[dentro]) |>
-  mutate(V = dist_vb  <= UMBRAL["Valenbisi"],
-         E = dist_emt <= UMBRAL["EMT"],
-         F = dist_fgv <= UMBRAL["FGV"],
-         situacion = case_when(V     ~ "Cubierto por Valenbisi",
-                               E & F ~ "Desierto compensado por EMT y FGV",
-                               E | F ~ "Desierto compensado por un modo",
-                               TRUE  ~ "Desierto sin compensación"))
-
-
-# arrio de cada hexágono (según su centro) y los 9 barrios con más desierto
-hex$coddistbar <- st_join(st_sf(geometry = centros), barrios_dom["coddistbar"])$coddistbar
-desierto <- sort(table(hex$coddistbar[!hex$V]), decreasing = TRUE)
-top <- names(desierto)[1:9]
-
-
-ggplot() +
-  geom_sf(data = hex, aes(fill = situacion), colour = NA) +
-  geom_sf(data = barrios_dom, fill = NA, colour = "white") +
-  geom_sf_text(data = filter(barrios_dom, coddistbar %in% top), aes(label = nombre), size = 2.5) +
-  scale_fill_manual(values = c("grey75", "#ee938c", "#e34948", "#9e2324"), name = NULL) +
-  theme_void()
-```
-
-
-
 
 
 
 ## Atomización
-
+En este apartado estudiamos cómo se reparte la capacidad de Valenbisi entre los barrios. Para cada barrio calculamos dos medidas: la densidad de estaciones (estaciones por km²) y el tamaño medio de sus estaciones (plazas por estación). Comparándolas con la mediana de la ciudad distinguimos barrios atomizados (muchos puntos de pocas plazas), barrios con macroaparcamientos (pocos puntos de gran capacidad) y barrios intermedios.
 ```{r}
 # Estaciones y plazas medias por barrio
 vb_barrio <- st_join(valenbisi, barrios["coddistbar"]) %>%
@@ -187,7 +145,7 @@ barrios_dom <- barrios %>%
   left_join(vb_barrio, by = "coddistbar") %>%
   mutate(n_est = coalesce(n_est, 0L), dens = n_est / area_km2)
 
-# Cortes: medianas de los barrios con 3 o más estaciones
+# 3 o más estaciones
 con3 <- filter(barrios_dom, n_est >= 3)
 corte_dens <- median(con3$dens)
 corte_tam  <- median(con3$plazas_media)
@@ -200,11 +158,7 @@ barrios_dom <- barrios_dom %>%
     TRUE                                          ~ "Intermedio"))
 ```
 
-
 ```{r}
-COL_CLASE <- c(Atomizado = "#6250d6", Macroaparcamiento = "#eda100",
-               Intermedio = "grey75", `Menos de 3 estaciones` = "grey95")
-
 p_a <- ggplot(filter(barrios_dom, n_est >= 3), aes(dens, plazas_media, colour = clase)) +
   geom_vline(xintercept = corte_dens, linetype = 2) +
   geom_hline(yintercept = corte_tam, linetype = 2) +
@@ -220,4 +174,81 @@ p_a + p_b + plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
 ```
 
+```{r}
+nrow(valenbisi); sum(valenbisi$plazas)
+summary(valenbisi$plazas)
 
+```
+```{r}
+nrow(barrios_dom); nrow(con3)
+corte_dens; corte_tam
+
+```
+De 72 barrios en el dominio, 41 tienen 3 o más estaciones. Las medianas que separan las clases son 8,1 estaciones/km² y 19,3 plazas por estación.
+
+```{r}
+count(st_drop_geometry(barrios_dom), clase)
+barrios_dom %>% st_drop_geometry() %>% filter(n_est >= 3) %>%
+  group_by(clase) %>% summarise(dens_media = mean(dens), plazas = mean(plazas_media))
+```
+
+En los barrios atomizados, las estaciones tienen de media entre 15,8 y 18,7 plazas. En los de macroaparcamientos, entre 19,9 y 27; el máximo es La Carrasca, donde está el campus de Tarongers.
+
+
+```{r}
+sum(con3$dens >= 10); sum(con3$dens > 16)
+```
+
+Comparando con la referencia del ITDP (10–16 estaciones/km²), solo 14 de los 41 barrios alcanzan las 10 estaciones/km², y solo uno (Ciutat Universitària) supera las 16
+
+
+### Rejilla hexagonal
+
+Las paradas son puntos y los barrios son polígonos de tamaños muy dispares (de menos de 0,1 km² a más de 6 km²). Para medir desiertos hace falta un soporte **independiente** de ambos. Se cubre el dominio con una rejilla de hexágonos de `r HEX_M` m entre lados opuestos y se conservan los hexágonos cuyo centroide cae dentro del dominio. Todos tienen la misma área, por lo que **la proporción de hexágonos es la proporción de superficie**. Se prefieren hexágonos a cuadrados porque sus seis vecinos están a la misma distancia y su menor relación perímetro/área reduce el sesgo de borde.
+
+```{r}
+rejilla <- st_make_grid(dominio, cellsize = HEX_M, square = FALSE)
+centros <- st_centroid(rejilla)
+dentro  <- lengths(st_within(centros, dominio)) > 0
+centros <- centros[dentro]#  nos quedamos con los que tienen el centro dentro del dominio
+```
+
+## Desiertos
+
+Ahora es cuando calculamos distancias entre los centros de los hexágonos y cada uno de nuestros medios de transporte
+
+```{r}
+#distancias entre centros de hexágonos y modos de transporte
+dist_vb  <- apply(st_distance(centros, filter(paradas, modo == "Valenbisi")), 1, min) #matriz de distancias, y luego aplicas el mínimo por filas (es decir, por centros)
+dist_emt <- apply(st_distance(centros, filter(paradas, modo == "EMT")), 1, min)
+dist_fgv <- apply(st_distance(centros, filter(paradas, modo == "FGV")), 1, min)
+# cobertura
+hex <- st_sf(geometry = rejilla[dentro]) %>%
+  mutate(V = dist_vb  <= UMBRAL["Valenbisi"],
+         E = dist_emt <= UMBRAL["EMT"],
+         F = dist_fgv <= UMBRAL["FGV"],
+         situacion = case_when(V     ~ "Cubierto por Valenbisi",
+                               E & F ~ "Desierto compensado por EMT y FGV",
+                               E | F ~ "Desierto compensado por un modo",
+                               TRUE  ~ "Desierto sin compensación"))
+
+#barrio de cada hexágono (según su centro) y los 9 barrios con más desierto
+hex$coddistbar <- st_join(st_sf(geometry = centros), barrios_dom["coddistbar"])$coddistbar
+desierto <- sort(table(hex$coddistbar[!hex$V]), decreasing = TRUE)
+top <- names(desierto)[1:9]
+
+
+ggplot() +
+  geom_sf(data = hex%>% group_by(situacion) %>% summarise(), aes(fill = situacion), colour = NA) +
+  geom_sf(data = barrios_dom, fill = NA, colour = "white") +
+  geom_sf_text(data = filter(barrios_dom, coddistbar %in% top), aes(label = nombre), size = 2.5) +
+  scale_fill_manual(values = c("grey75", "#ee938c", "#e34948", "#9e2324"), name = NULL) +
+  theme_void()
+```
+
+```{r}
+colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) #qué cubre cada modo
+hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) #se complementan los medios?
+
+sum(desierto[1:9]) / sum(desierto)  # peso de los 9 primeros
+```
