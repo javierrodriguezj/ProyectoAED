@@ -691,3 +691,47 @@ g3<-ggplot(datos_transporte) +
 
 g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
+
+```{r}
+datos_transporte %>%
+  st_drop_geometry() %>%
+  select(nombre_distrito, densidad, n_emt, n_metro, n_valenbisi) %>%
+  arrange(desc(densidad))
+
+datos_transporte <- datos_transporte %>%
+  mutate(
+    transporte_total = n_emt + n_metro + n_valenbisi
+  )
+
+datos_transporte %>%
+  st_drop_geometry() %>%
+  select(nombre_distrito, densidad, transporte_total) %>%
+  arrange(desc(transporte_total))
+
+datos_transporte <- datos_transporte %>%
+  mutate(
+    ratio_transporte_densidad = transporte_total / densidad
+  )
+
+cor(datos_transporte$densidad,
+    datos_transporte$transporte_total,
+    use = "complete.obs")
+
+ggplot(datos_transporte) +
+  geom_sf(aes(fill = ratio_transporte_densidad)) +
+  scale_fill_gradient(
+    low = "white",
+    high = "blue"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank()
+  ) +
+  labs(
+    title = "Oferta de transporte respecto a la densidad de población",
+    fill = "Transporte/densidad"
+  )
+
+```
