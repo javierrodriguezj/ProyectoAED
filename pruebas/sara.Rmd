@@ -496,7 +496,7 @@ En primer lugar, se va a crear un DataFrame en el que cada fila corresponda a un
 Para ello, debido a que los datos de población están disponibles a nivel de barrio, agrupamos la información para obtener una única densidad de población por cada zona.
 
 ```{r}
-densidad_distrito <- pob %>% st_drop_geometry() %>% group_by(coddistrit,nombre_distrito) %>% summarise(densidad = first(densidad_distrito_hab_ha))
+densidad_distrito <- pob %>% group_by(coddistrit, nombre_distrito) %>% summarise(densidad = first(densidad_distrito_hab_ha),geometry = first(geom_distrito))
 ```
 
 Por otro lado, como los datos de transporte únicamente proporcionan la localización geográfica de sus estaciones o paradas, será necesario asociar cada punto al distrito correspondiente y posteriormente contabilizar el número de estaciones existentes en cada zona. Finalmente, toda esta información se unirá en una única tabla que permitirá analizar la relación entre densidad de población y oferta de transporte público.
@@ -535,8 +535,9 @@ par(
   mar = c(4,4,3,2)
 )
 
+# EMT
 plot(
-  st_geometry(distritos_unidos),
+  st_geometry(datos_transporte),
   main = "EMT",
   col = "white",
   border = "black"
@@ -548,6 +549,8 @@ plot(
   pch = 16
 )
 
+
+# Metrovalencia
 plot(
   st_geometry(fgv),
   main = "Metrovalencia",
@@ -555,13 +558,16 @@ plot(
   pch = 16
 )
 plot(
-  st_geometry(distritos_unidos),
+  st_geometry(datos_transporte),
   add = TRUE,
   border = "black"
 )
 
+
+
+# ValenBisi
 plot(
-  st_geometry(distritos_unidos),
+  st_geometry(datos_transporte),
   main = "ValenBisi",
   col = "white",
   border = "black"
@@ -587,8 +593,8 @@ La población de Valencia no se distribuye de manera uniforme entre sus distrito
 En primer lugar, se va a analizar la distribución de la densidad de población de los distritos de la ciudad de Valencia. Para ello, se grafica un mapa de Valencia coloreado en base a la densidad.
 
 ```{r}
-ggplot(pob) +
-  geom_sf(aes(fill = densidad_hab_ha)) +
+ggplot(datos_transporte) +
+  geom_sf(aes(fill = densidad)) +
   coord_sf(
     xlim = c(-0.43, -0.31),
     ylim = c(39.42, 39.53)
