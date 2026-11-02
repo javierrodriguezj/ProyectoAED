@@ -31,7 +31,7 @@ library(magrittr)
 ```{r parametros}
 DIR_DATOS      <- "../data"
 CRS_M          <- 25830                       # ETRS89 / UTM 30N (metros) deformacion de La Tierra
-UMBRAL         <- c(Valenbisi = 300, EMT = 300, FGV = 500)   # metros
+UMBRAL         <- c(Valenbisi = 200, EMT = 300, FGV = 500)   # metros
 BUFFER_BORDE   <- 1000                        # corrección del 
 COL_MODO     <- c(Valenbisi = "#2a78d6", EMT = "#eb6834", FGV = "#1baf7a")
 HEX_M          <- 100                         # distancia entre lados opuestos del hexágono
@@ -126,11 +126,50 @@ ggplot() +
 
 Las paradas son puntos y los barrios son polígonos de tamaños muy dispares (de menos de 0,1 km² a más de 6 km²). Para medir desiertos hace falta un soporte **independiente** de ambos. Se cubre el dominio con una rejilla de hexágonos de `r HEX_M` m entre lados opuestos y se conservan los hexágonos cuyo centroide cae dentro del dominio. Todos tienen la misma área, por lo que **la proporción de hexágonos es la proporción de superficie**. Se prefieren hexágonos a cuadrados porque sus seis vecinos están a la misma distancia y su menor relación perímetro/área reduce el sesgo de borde.
 
+
+
 ```{r}
-rejilla    <- st_make_grid(dominio, cellsize = HEX_M, square = FALSE)
-centroides <- st_centroid(rejilla)
-dentro     <- lengths(st_within(centroides, dominio)) > 0
+rejilla <- st_make_grid(dominio, cellsize = 30, square = FALSE)
+centros <- st_centroid(rejilla)
+dentro  <- lengths(st_within(centros, dominio)) > 0
+centros <- centros[dentro]#  nos quedamos con los que tienen el centro dentro del dominio
 ```
+
+## Desiertos
+
+```{r}
+#distancias entre centros de hexágonos y modos de transporte
+dist_vb  <- apply(st_distance(centros, filter(paradas, modo == "Valenbisi")), 1, min)
+dist_emt <- apply(st_distance(centros, filter(paradas, modo == "EMT")), 1, min)
+dist_fgv <- apply(st_distance(centros, filter(paradas, modo == "FGV")), 1, min)
+
+# cobertura de cada modo y situación de cada hexágono
+hex <- st_sf(geometry = rejilla[dentro]) |>
+  mutate(V = dist_vb  <= UMBRAL["Valenbisi"],
+         E = dist_emt <= UMBRAL["EMT"],
+         F = dist_fgv <= UMBRAL["FGV"],
+         situacion = case_when(V     ~ "Cubierto por Valenbisi",
+                               E & F ~ "Desierto compensado por EMT y FGV",
+                               E | F ~ "Desierto compensado por un modo",
+                               TRUE  ~ "Desierto sin compensación"))
+
+
+# arrio de cada hexágono (según su centro) y los 9 barrios con más desierto
+hex$coddistbar <- st_join(st_sf(geometry = centros), barrios_dom["coddistbar"])$coddistbar
+desierto <- sort(table(hex$coddistbar[!hex$V]), decreasing = TRUE)
+top <- names(desierto)[1:9]
+
+
+ggplot() +
+  geom_sf(data = hex, aes(fill = situacion), colour = NA) +
+  geom_sf(data = barrios_dom, fill = NA, colour = "white") +
+  geom_sf_text(data = filter(barrios_dom, coddistbar %in% top), aes(label = nombre), size = 2.5) +
+  scale_fill_manual(values = c("grey75", "#ee938c", "#e34948", "#9e2324"), name = NULL) +
+  theme_void()
+```
+
+
+
 
 
 
