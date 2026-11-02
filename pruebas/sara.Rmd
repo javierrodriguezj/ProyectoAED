@@ -534,6 +534,26 @@ par(
   mfrow = c(1,3),
   mar = c(4,4,3,2)
 )
+# 
+# transportes <- list(emt, fgv, valenbisi)
+# nombres <- c("EMT", "Metrovalencia", "ValenBisi")
+# colores <- c("blue", "red", "green")
+# 
+# for (i in 1:3){
+#   plot(
+#     st_geometry(datos_transporte),
+#     main = nombres[i],
+#     col = "white",
+#     border = "black"
+#   )
+#   
+#   plot(
+#     st_geometry(transportes[[i]]),
+#     add = TRUE,
+#     col = colores[i],
+#     pch = 16
+#   )
+# }
 
 # EMT
 plot(
@@ -549,7 +569,6 @@ plot(
   pch = 16
 )
 
-
 # Metrovalencia
 plot(
   st_geometry(fgv),
@@ -562,8 +581,6 @@ plot(
   add = TRUE,
   border = "black"
 )
-
-
 
 # ValenBisi
 plot(
@@ -600,8 +617,8 @@ ggplot(datos_transporte) +
     ylim = c(39.42, 39.53)
   ) + 
   scale_fill_gradient(
-    low = "lightblue",
-    high = "darkblue"
+    low = "#FF69B4",
+    high = "#8B0A50"
   ) +
   theme_minimal() +
   labs(
@@ -613,3 +630,64 @@ ggplot(datos_transporte) +
 Como se puede observar en el mapa, los distritos con menor densidad de población se muestran en un tono más claro y se van oscureciendo a medida que la densidad aumenta. Esto nos permite ver a simple vista qué distritos deberían necesitar, en principio, una mayor cobertura de transporte público, algo que analizaremos a continuación para ver si realmente se cumple.
 
 ### ¿Cómo se distribuyen las redes de transporte?
+
+```{r}
+library(patchwork)
+
+g1<-ggplot(datos_transporte) +
+  geom_sf(aes(fill = n_emt)) +
+  coord_sf(
+    xlim = c(-0.43, -0.31),
+    ylim = c(39.42, 39.53)
+  ) + 
+  scale_fill_gradient(
+    low = "lightblue",
+    high = "darkblue"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Paradas de emt por distrito",
+    fill = "nº paradas"
+  )+theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  )
+
+g2<-ggplot(datos_transporte) +
+  geom_sf(aes(fill = n_metro)) +
+  coord_sf(
+    xlim = c(-0.43, -0.31),
+    ylim = c(39.42, 39.53)
+  ) + 
+  scale_fill_gradient(
+    low = "red",
+    high = "darkred"  ) +
+  theme_minimal() +
+  labs(
+    title = "Paradas de metroValencia por distrito",
+    fill = "nº paradas"
+  )+theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  )
+
+g3<-ggplot(datos_transporte) +
+  geom_sf(aes(fill = n_valenbisi)) +
+  coord_sf(
+    xlim = c(-0.43, -0.31),
+    ylim = c(39.42, 39.53)
+  ) + 
+  scale_fill_gradient(
+    low = "lightgreen",
+    high = "darkgreen"  ) +
+  theme_minimal() +
+  labs(
+    title = "Paradas de valenbisi por distrito",
+    fill = "nº paradas"
+  )+theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  )
+
+g1 + g2 + g3 + plot_layout(ncol = 2)
+```
