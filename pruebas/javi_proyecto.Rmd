@@ -134,4 +134,51 @@ dentro     <- lengths(st_within(centroides, dominio)) > 0
 
 
 
+## Atomización
+
+```{r}
+# Estaciones y plazas medias por barrio
+vb_barrio <- st_join(valenbisi, barrios["coddistbar"]) %>%
+  st_drop_geometry() %>%
+  group_by(coddistbar) %>%
+  summarise(n_est = n(), plazas_media = mean(plazas))
+
+barrios_dom <- barrios %>%
+  filter(coddistrit %in% DISTRITOS_DOMINIO) %>%
+  left_join(vb_barrio, by = "coddistbar") %>%
+  mutate(n_est = coalesce(n_est, 0L), dens = n_est / area_km2)
+
+# Cortes: medianas de los barrios con 3 o más estaciones
+con3 <- filter(barrios_dom, n_est >= 3)
+corte_dens <- median(con3$dens)
+corte_tam  <- median(con3$plazas_media)
+
+barrios_dom <- barrios_dom %>%
+  mutate(clase = case_when(
+    n_est < 3                                     ~ "Menos de 3 estaciones",
+    dens >= corte_dens & plazas_media <  corte_tam ~ "Atomizado",
+    dens <  corte_dens & plazas_media >= corte_tam ~ "Macroaparcamiento",
+    TRUE                                          ~ "Intermedio"))
+```
+
+
+```{r}
+COL_CLASE <- c(Atomizado = "#6250d6", Macroaparcamiento = "#eda100",
+               Intermedio = "grey75", `Menos de 3 estaciones` = "grey95")
+
+p_a <- ggplot(filter(barrios_dom, n_est >= 3), aes(dens, plazas_media, colour = clase)) +
+  geom_vline(xintercept = corte_dens, linetype = 2) +
+  geom_hline(yintercept = corte_tam, linetype = 2) +
+  geom_point() +
+  geom_text_repel(aes(label = nombre), data = ~ filter(.x, clase != "Intermedio"), size = 2.5) +
+  labs(x = "Estaciones por km²", y = "Plazas por estación (media)") +
+  guides(colour = "none") + theme_minimal()
+
+p_b <- ggplot(barrios_dom) + geom_sf(aes(fill = clase)) + theme_void()
+
+p_a + p_b + plot_layout(guides = "collect") &
+  scale_colour_manual(values = COL_CLASE, aesthetics = c("colour", "fill"), name = NULL) &
+  theme(legend.position = "bottom")
+```
+
 
