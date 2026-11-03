@@ -514,7 +514,7 @@ metro_n <- metro_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n
 valenbisi_n <- valenbisi_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n_valenbisi")
 
 #Finalmente, unimos estos datos obtenidos a la tabla que hemos creado anteriormente
-datos_transporte <- densidad_distrito %>% left_join(emt_n, by = "coddistrit") %>% left_join(metro_n, by = "coddistrit") %>% left_join(valenbisi_n, by = "coddistrit")
+datos_transporte <- densidad_distrito %>% left_join(emt_n, by = "coddistrit") %>% left_join(metro_n, by = "coddistrit") %>% left_join(valenbisi_n, by = "coddistrit")%>% mutate(n_emt = replace(n_emt, is.na(n_emt), 0),n_metro = replace(n_metro, is.na(n_metro), 0),n_valenbisi = replace(n_valenbisi, is.na(n_valenbisi), 0))
 
 ```
 
@@ -718,6 +718,26 @@ cor(datos_transporte$densidad,
     use = "complete.obs")
 
 ggplot(datos_transporte) +
+  geom_sf(aes(fill = transporte_total)) +
+  scale_fill_gradient(
+    low = "white",
+    high = "blue"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank()
+  ) +
+  labs(
+    title = "Transporte total por distrito",
+    fill = "Transporte"
+  )+  coord_sf(
+    xlim = c(-0.43, -0.31),
+    ylim = c(39.42, 39.53)
+  ) 
+
+ggplot(datos_transporte) +
   geom_sf(aes(fill = ratio_transporte_densidad)) +
   scale_fill_gradient(
     low = "white",
@@ -732,6 +752,9 @@ ggplot(datos_transporte) +
   labs(
     title = "Oferta de transporte respecto a la densidad de población",
     fill = "Transporte/densidad"
-  )
+  )+  coord_sf(
+    xlim = c(-0.43, -0.31),
+    ylim = c(39.42, 39.53)
+  ) 
 
 ```
