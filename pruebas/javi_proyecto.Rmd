@@ -1,6 +1,8 @@
 ---
 title: "javi_proyecto"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 # Introducción
@@ -91,9 +93,9 @@ Ahora, unimos todas las paradas en un dataframe distinguiendo mediante factores 
 
 ```{r}
 paradas <- bind_rows(
-  valenbisi %>% transmute(modo = "Valenbisi", id),
-  emt       %>% transmute(modo = "EMT", id = as.character(id_parada)),
-  fgv       %>% transmute(modo = "FGV", id = as.character(codigo))
+  valenbisi %>% transmute(modo = "Valenbisi"),
+  emt       %>% transmute(modo = "EMT"),
+  fgv       %>% transmute(modo = "FGV")
 ) %>%
   mutate(modo = factor(modo, levels = MODOS))
 table(paradas$modo)
@@ -104,7 +106,7 @@ Veamos cuales distritos tienen al menos una estación de Valenbisi para poder es
 
 ```{r}
 # Distritos que tienen al menos una estación Valenbisi
-vb_distrito <- st_join(valenbisi, distritos["coddistrit"]) #comprueba si el punto valenbisi está dentro del polígono del distrito y añade el código del distrito
+vb_distrito <- st_join(valenbisi, barrios["coddistrit"]) #comprueba si el punto valenbisi está dentro del polígono del distrito y añade el código del distrito
 
 DISTRITOS_DOMINIO <- sort(unique(vb_distrito$coddistrit))
 cat('Los distritos',distritos %>% filter(!coddistrit %in% DISTRITOS_DOMINIO) %>%pull(nombre) %>% unique())
@@ -129,10 +131,10 @@ ggplot() +
   theme(strip.text = element_text(face = "bold", hjust = 0))
 ```
 
-
-
 ## Atomización
+
 En este apartado estudiamos cómo se reparte la capacidad de Valenbisi entre los barrios. Para cada barrio calculamos dos medidas: la densidad de estaciones (estaciones por km²) y el tamaño medio de sus estaciones (plazas por estación). Comparándolas con la mediana de la ciudad distinguimos barrios atomizados (muchos puntos de pocas plazas), barrios con macroaparcamientos (pocos puntos de gran capacidad) y barrios intermedios.
+
 ```{r}
 # Estaciones y plazas medias por barrio
 vb_barrio <- st_join(valenbisi, barrios["coddistbar"]) %>%
@@ -179,11 +181,13 @@ nrow(valenbisi); sum(valenbisi$plazas)
 summary(valenbisi$plazas)
 
 ```
+
 ```{r}
 nrow(barrios_dom); nrow(con3)
 corte_dens; corte_tam
 
 ```
+
 De 72 barrios en el dominio, 41 tienen 3 o más estaciones. Las medianas que separan las clases son 8,1 estaciones/km² y 19,3 plazas por estación.
 
 ```{r}
@@ -194,15 +198,14 @@ barrios_dom %>% st_drop_geometry() %>% filter(n_est >= 3) %>%
 
 En los barrios atomizados, las estaciones tienen de media entre 15,8 y 18,7 plazas. En los de macroaparcamientos, entre 19,9 y 27; el máximo es La Carrasca, donde está el campus de Tarongers.
 
-
 ```{r}
 sum(con3$dens >= 10); sum(con3$dens > 16)
 ```
 
 Comparando con la referencia del ITDP (10–16 estaciones/km²), solo 14 de los 41 barrios alcanzan las 10 estaciones/km², y solo uno (Ciutat Universitària) supera las 16
 
-
-### Rejilla hexagonal
+# Desiertos
+## Rejilla hexagonal
 
 Las paradas son puntos y los barrios son polígonos de tamaños muy dispares (de menos de 0,1 km² a más de 6 km²). Para medir desiertos hace falta un soporte **independiente** de ambos. Se cubre el dominio con una rejilla de hexágonos de `r HEX_M` m entre lados opuestos y se conservan los hexágonos cuyo centroide cae dentro del dominio. Todos tienen la misma área, por lo que **la proporción de hexágonos es la proporción de superficie**. Se prefieren hexágonos a cuadrados porque sus seis vecinos están a la misma distancia y su menor relación perímetro/área reduce el sesgo de borde.
 
@@ -213,7 +216,7 @@ dentro  <- lengths(st_within(centros, dominio)) > 0
 centros <- centros[dentro]#  nos quedamos con los que tienen el centro dentro del dominio
 ```
 
-## Desiertos
+
 
 Ahora es cuando calculamos distancias entre los centros de los hexágonos y cada uno de nuestros medios de transporte
 
