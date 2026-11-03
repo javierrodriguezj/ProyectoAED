@@ -248,7 +248,7 @@ ggplot() +
 
 ```{r}
 colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) #qué cubre cada modo
-hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) #se complementan los medios?
+hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) #se complementan los medios? NO 
 
 sum(desierto[1:9]) / sum(desierto)  # peso de los 9 primeros
 ```
