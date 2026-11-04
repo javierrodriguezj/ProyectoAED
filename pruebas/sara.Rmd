@@ -662,6 +662,8 @@ Como se puede observar en el mapa, los distritos con menor densidad de població
 ### ¿Cómo se distribuyen las redes de transporte?
 
 ```{r}
+library(patchwork)
+
 g1 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_emt)) +
   scale_fill_gradient(low = "lightblue", high = "darkblue") +
