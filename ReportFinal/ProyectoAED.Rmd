@@ -122,32 +122,14 @@ rm(list = ls())
 if (!require("pacman")) install.packages("pacman")
 
 # Carga e instala automáticamente solo las librerías faltantes
-pacman::p_load(sf, readxl, tidyr, stringr, dyplr, lubridate, ggplot2)
-
-invisible(lapply(c("sf", "readxl", "dplyr", "tidyr", "stringr", "lubridate", "ggplot2"), library, character.only = TRUE))
+packages <- c("sf", "readxl", "dplyr", "tidyr", "stringr", "lubridate", "ggplot2", "forcats", "patchwork", "ggrepel", "scales", "spdep", "knitr", "kableExtra", "magrittr")
+pacman::p_load(char=packages)
+invisible(lapply(packages, library, character.only = TRUE))
 ```
 
 # Descarga de los datos (*Raw data*)
 
 A continuación descargaremos todos los datasets que hemos utilizado para este proyecto:
-
-- Valenbisi: <https://opendata.vlci.valencia.es/dataset/valenbisi-disponibilitat-valenbisi-dsiponibilidad>
-
-- EMT: <https://opendata.vlci.valencia.es/dataset/emt>
-
-- FGV:
-
-  - Estaciones: <https://opendata.vlci.valencia.es/dataset/fgv-estacions-estaciones>
-
-  - [NO DESCARGADO DE MOMENTO] Bocas: <https://opendata.vlci.valencia.es/dataset/fgv-bocas>
-
-- Vulnerabilidad económica: <https://opendata.vlci.valencia.es/dataset/vulnerabilidad-por-barrios>
-
-- Geometría barrios: <https://opendata.vlci.valencia.es/dataset/barris-barrios>
-
-- Geometría distritos: <https://opendata.vlci.valencia.es/dataset/districtes-distritos>
-
-- 
 
 ```{r, message=FALSE, warning=FALSE}
 savedir <- '../data/'
@@ -168,11 +150,6 @@ filepath <- paste0(savedir, 'fgv_paradas.geojson')
 data <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
 
-# Vulnerabilidad económica
-filepath <- paste0(savedir, 'vulnerab_eco.geojson')
-data <- st_read(dsn = 'https://opendata.vlci.valencia.es/dataset/ca18278b-d040-4274-b9c7-c1a9daae54b9/resource/fd2ca0dc-5344-4aad-8934-2077a0bb120d/download/vulnerabilidad-por-barrios.geojson', quiet = TRUE)
-if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
-
 # Geometría barrios
 filepath <- paste0(savedir, 'geom_barrios.geojson')
 data <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
@@ -189,13 +166,11 @@ url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.z
 if (!file.exists(filepath)) download.file(url_descarga, destfile = filepath, mode = "wb")
 ```
 
-# Limpieza de datos
+# Conseguir un dataset *tidy*
 
-## *Technically correct & consistent data*
+## Datos de transporte público
 
-### Datos de transporte público
-
-Primero realizaremos una conversión de tipos de datos a los más apropiados en cada caso.
+En primer lugar, agruparemos todos los datos de transporte públio en un único dataframe *tidy*.
 
 ```{r}
 # Cargamos los datos que hemos guardado previamente.
@@ -203,34 +178,20 @@ rm(list = ls()); filepath <- "../data/poblacion.gpkg"; savedir <- '../data/'
 df.valenbisi    <- st_read(paste0(savedir, 'valenbisi.geojson'), quiet = TRUE)
 df.emt          <- st_read(paste0(savedir, 'emt.geojson'), quiet = TRUE)
 df.fgv_paradas  <- st_read(paste0(savedir, 'fgv_paradas.geojson'), quiet = TRUE)
-df.vulnerab_eco <- st_read(paste0(savedir, 'vulnerab_eco.geojson'), quiet = TRUE)
 ```
+
+Estos dataframes tienen columnas que no vamos a necesitar para nuestro análisis, por lo que formaremos nuestro *tidy* dataset únicamente con las variables que nos vayan a ser útiles (variables "decorativas" como los nombres de las paradas no resultan relevantes para este estudio). En concreto, nos interesa su ubicación o su *geometría*.
 
 ```{r}
-df.valenbisi <- df.valenbisi |> 
-  mutate(open=as.logical(open), ticket=as.logical(ticket), updated_at=dmy_hms(updated_at, tz='Europe/Madrid'))
-
-df.emt <- df.emt |> 
-  mutate(suprimida=as.logical(suprimida), lineas = strsplit(lineas, ","))
-
-df.fgv_paradas <- df.fgv_paradas |> 
-  mutate(codigo=as.integer(codigo), tipo=as.logical(tipo), lineas = strsplit(linea, ","), .keep="unused") |> 
-  relocate(lineas, .before = proximas_llegadas) |>
-  rename(proximas_llegadas_es = proximas_llegadas, proximas_llegadas_val = proximes_llegadas)
-
-df.vulnerab_eco <- df.vulnerab_eco |>
-  pivot_longer(cols = matches("^(ind|vul)_"), names_to = c(".value", "categoria"), names_pattern = "^(.*)_(.*)$") |>
-  rename(indice=ind, vulnerabilidad=vul) |>
-  mutate(
-    lon = as.numeric(str_extract(geo_point_2d, "(?<=\"lon\":\\s)-?[0-9\\.]+")),
-    lat = as.numeric(str_extract(geo_point_2d, "(?<=\"lat\":\\s)-?[0-9\\.]+")),
-    vulnerabilidad=factor(vulnerabilidad, levels=c("Vulnerabilidad Baja", "Vulnerabilidad Media", "Vulnerabilidad Alta"), ordered=T)
-  ) |>
-  relocate(c("lon", "lat"), .before=geo_point_2d) |>
-  select(-geo_point_2d)
+df.transporte <- bind_rows(
+  df.valenbisi %>% transmute(gid=as.integer(gid), empresa="Valenbisi", lineas=as.list((number))),
+  df.emt %>% transmute(gid=as.integer(gid), empresa="EMT", lineas=strsplit(lineas, ",")),
+  df.fgv_paradas %>% transmute(gid=as.integer(gid), empresa="FGV", lineas=strsplit(linea, ",")),
+)
+head(as_tibble(df.transporte))
 ```
 
-### Datos de los barrios y distritos
+## Datos de los barrios y distritos
 
 El archivo `barrios.zip` contiene varios archivos .xlsx, que son los que realmente contienen los datos que nos interesan. Concretamente, queremos extraer los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. A continuación, extraeremos el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
 
@@ -238,18 +199,15 @@ El archivo `barrios.zip` contiene varios archivos .xlsx, que son los que realmen
 extraer_densidad <- function(ruta) {
   hoja <- read_excel(ruta, sheet = "Padron", col_names = FALSE,
                      col_types = "list", .name_repair = "minimal")
-  
   valor <- function(f, c) {
     if (f > nrow(hoja) || c < 1 || c > ncol(hoja)) return(NA_real_)
     v <- hoja[[c]][[f]]
     if (is.null(v) || length(v) == 0) NA_real_ else suppressWarnings(as.numeric(v))
   }
-  
   # Nombre del barrio a partir del título (celda A1),
   # p. ej. "1. Padrón a 01/01/2025 . Barrio 1.1. la Seu"
   titulo <- as.character(hoja[[1]][[1]])
   nombre <- sub(".*Barrio\\s+\\d+\\.\\d+\\.\\s*", "", titulo)
-  
   num <- as.integer(regmatches(basename(ruta), gregexpr("\\d+", basename(ruta)))[[1]])
   
   # Buscar la cabecera de densidad
@@ -293,88 +251,177 @@ df.pob <- do.call(rbind, lapply(archivos, extraer_densidad))
 df.pob <- df.pob[order(df.pob$distrito, df.pob$barrio), ]
 rownames(df.pob) <- NULL
 
-head(df.pob)
-```
-
-A este dataset le falta la información de la geometría de barrios y distritos.
-
-```{r}
+# Añadimos la geometría de los barrios y distritos
+# Los cargamos:
 filepath <- paste0(savedir, "geom_barrios.geojson")
 df.geom_barrios <- st_read(dsn=filepath, quiet=T)
-head(df.geom_barrios)
-
-cat("\n")
+#head(as_tibble(df.geom_barrios))
 
 filepath <- paste0(savedir, "geom_distritos.geojson")
 df.geom_distritos <- st_read(dsn=filepath, quiet=T)
-head(df.geom_distritos)
-```
+#head(as_tibble(df.geom_distritos))
 
-```{r}
+# Los unimos:
 # Creamos dataframe de distritos
-geom_distritos <- df.geom_distritos |>
-  st_make_valid() |>
-  mutate(coddistrit = as.integer(coddistrit)) |> # chr to int
-  group_by(coddistrit) |> # Agrupamos por código de distrito
-  summarise(nombre_distrito = first(nombre), .groups = "drop") |> # Añadimos el nombre del distrito
-  rename(geom_distrito = all_of(attr(df.geom_distritos, "sf_column"))) # Renombramos la columna de geometría
+geom_distritos <- df.geom_distritos %>%
+  st_make_valid() %>%
+  mutate(coddistrit = as.integer(coddistrit)) %>%
+  group_by(coddistrit) %>%
+  summarise(nombre_distrito = first(nombre), .groups = "drop") %>%
+  mutate(superficie_distrito = as.numeric(st_area(geometry)) / 1e6) %>%
+  rename(geom_distrito = all_of(attr(df.geom_distritos, "sf_column")))
 
-# Juntamos geom_barrios y el anterior de distritos en df.pob
-df.pob <- df.geom_barrios |>
-  st_make_valid() |>
-  mutate(coddistrit = as.integer(coddistrit), # chr to int
-         codbarrio  = as.integer(codbarrio)) |> # chr to int
-  select(coddistrit, codbarrio, nombre_barrio_geo = nombre) |>
-  right_join(st_drop_geometry(df.pob), # Juntamos a df.pob
-            by = c("coddistrit" = "distrito", "codbarrio" = "barrio")) |>
-  select(-nombre_barrio) |> # Eliminamos columna redundante
-  rename(nombre_barrio=nombre_barrio_geo) %>%
-  rename(geom_barrio = all_of(attr(., "sf_column"))) |> # Renombramos la columna de geometría
-  left_join(tibble::as_tibble(geom_distritos), by = "coddistrit") |> # Juntamos los distritos también
-  relocate(nombre_distrito, .after = codbarrio) |>
-  relocate(geom_distrito, .before = geom_barrio) |>
-  # Calculamos la densidad por distrito
-  group_by(coddistrit) |>
-  mutate(densidad_distrito = sum(personas, na.rm = TRUE) /
-           sum(superficie_barrio, na.rm = TRUE)) |>
-  ungroup() |>
-  relocate(densidad_distrito, .before = densidad_barrio) |>
-  arrange(coddistrit, codbarrio) # Ordenamos
+# Lo juntamos a df.pob
+df.pob <- df.geom_barrios %>%
+  st_make_valid() %>%
+  mutate(across(c(coddistrit, codbarrio, coddistbar), as.integer)) %>%
+  select(coddistrit, codbarrio, coddistbar, nombre_barrio_geo = nombre) %>%
+  right_join(st_drop_geometry(df.pob), by = c("coddistrit" = "distrito", "codbarrio" = "barrio")) %>%
+  select(-nombre_barrio) %>%
+  rename(nombre_barrio = nombre_barrio_geo, geom_barrio = all_of(attr(., "sf_column"))) %>%
+  left_join(tibble::as_tibble(geom_distritos), by = "coddistrit") %>%
+  relocate(nombre_distrito, .before = nombre_barrio) %>%
+  relocate(geom_distrito, .before = geom_barrio) %>%
+  group_by(coddistrit) %>%
+  mutate(densidad_distrito = sum(personas, na.rm = TRUE) / sum(superficie_barrio, na.rm = TRUE)) %>%
+  ungroup() %>%
+  relocate(densidad_distrito, .before = densidad_barrio) %>%
+  relocate(superficie_distrito, .before = superficie_barrio) %>%
+  arrange(coddistrit, codbarrio) %>%
+  # Hay unas variables en las columnas. Toca hacerla tidy.
+  # Creamos columna de personas por distrito
+  group_by(coddistrit) %>%
+  mutate(personas_distrito = sum(personas, na.rm = TRUE)) %>% ungroup() %>%
+  relocate(personas_distrito, .before = personas) %>%
+  rename(personas_barrio = personas)
+
+
+# Hacemos tidy
+df.pob <- df.pob %>% 
+  as_tibble() %>%
+  rename(
+    id_distrito = coddistrit,
+    id_barrio = codbarrio,
+    geometria_distrito = geom_distrito,
+    geometria_barrio = geom_barrio
+  ) %>%
+  pivot_longer(
+    cols = -coddistbar, 
+    names_to = c(".value", "tipo"),
+    names_sep = "_"
+  ) %>%
+  st_as_sf(sf_column_name = "geometria")
 
 head(as_tibble(df.pob))
-
-# Guardamos el dataset. No obstante, no se pueden guardar las dos geometrías en la misma tabla fácilente. Así que solo guardaremos la de los barrios primero.
-filepath <- paste0(savedir, "poblacion_geom_barrios.geojson")
-barrios_geometria <- df.pob |> 
-  select(geom_barrio)
-suppressWarnings(st_write(barrios_geometria, filepath, delete_dsn = TRUE))
-
-# Ahora guardaremos todo, con ambas geometrías. Debemos separar las geometrías en capas. El problema es que el archivo está encriptado, por eso preferimos guardar el dataset en .geojson también.
-filepath <- paste0(savedir, "poblacion.gpkg")
-
-barrios_limpio <- df.pob |> 
-  select(-geom_distrito)
-suppressWarnings(st_write(barrios_limpio, filepath, layer = "barrios", delete_dsn = TRUE))
-
-distritos_unicos <- df.pob |> 
-  st_drop_geometry() |>
-  select(coddistrit, nombre_distrito, geom_distrito) |> 
-  distinct() |>
-  st_set_geometry("geom_distrito") |>
-  st_cast("MULTIPOLYGON")
-suppressWarnings(st_write(distritos_unicos, filepath, layer = "distritos", delete_layer = TRUE))
-
-df.geom_barrios <- NULL; df.geom_distritos <- NULL; barrios_geometria <- NULL; barrios_limpio <- NULL; distritos_unicos <- NULL; geom_distritos <- NULL
 ```
 
-## *Consistent data*
+# Visualización inicial de los datos
 
-En la sección anterior hemos aprovechado para realizar este tipo de transformaciones ya. Por ejemplo, `df.vulnerab_eco` no era *tidy* y ha sido reestructurada mediante funciones como `pivot_longer()` ya que contenía variables en los nombres de las columnas. Otros tipos de transformaciones como renombramientos o reordenaciones también han sido aplciadas para mantener la consistencia con una misma estructura de datos.
-
-# Análisis
-
-Aquí empezaría nuestro análisis como tal...
+Mapas:
 
 ```{r}
+distritos_mapa <- distritos %>% mutate(dentro = coddistrit %in% DISTRITOS_DOMINIO)
+caja <- st_bbox(zona_calculo)
 
+ggplot() +
+  geom_sf(data = distritos_mapa, aes(fill = dentro), colour = "grey75", linewidth = 0.25) +
+  geom_sf(data = st_sf(geometry = zona_calculo), fill = NA, colour = "grey50", linetype = "dashed") +
+  geom_sf(data = paradas, aes(colour = modo), size = 0.45, show.legend = FALSE) +
+  facet_wrap(~ modo) +
+  scale_fill_manual(values = c(`TRUE` = "white", `FALSE` = "grey92"), guide = "none") +
+  scale_colour_manual(values = COL_MODO) +
+  coord_sf(xlim = caja[c("xmin", "xmax")], ylim = caja[c("ymin", "ymax")], expand = FALSE) +
+  theme_void() +
+  theme(strip.text = element_text(face = "bold", hjust = 0))
+```
+
+# P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
+
+```{r}
+g1 <- ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = n_emt)) +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Paradas de EMT por barrio", fill = "nº paradas")
+
+g2 <- ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = n_metro)) +
+  scale_fill_gradient(low = "red", high = "darkred") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Paradas de Metrovalencia por barrio", fill = "nº paradas")
+
+g3 <- ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = n_valenbisi)) +
+  scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Estaciones de Valenbisi por barrio", fill = "nº estaciones")
+
+g1 + g2 + g3 + plot_layout(ncol = 2)
+```
+
+```{r}
+# Añadir arriba:
+ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = densidad_hab_ha)) +
+  scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
+  theme_minimal() +
+  labs(title = "Densidad de población por barrio", fill = "Habitantes/ha")
+```
+
+# P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
+
+Justificar el umbral de cercanía:
+
+```{r}
+min_dist_emt <- as.numeric(apply(mat.dist.emt, 1, min))
+min_dist_fgv <- as.numeric(apply(mat.dist.fgv, 1, min))
+
+df_distancias <- data.frame(
+  Transporte = c(rep("EMT", length(min_dist_emt)), rep("FGV", length(min_dist_fgv))),
+  distancia_minima = c(min_dist_emt, min_dist_fgv)
+)
+
+ggplot(df_distancias, aes(x = distancia_minima, fill = Transporte)) +
+  geom_density(alpha = 0.6) +
+  scale_fill_manual(values = c("EMT" = "#c70c30", "FGV" = "#fabd00")) +
+  scale_x_continuous(
+    limits = c(0, 1500), 
+    breaks = seq(0, 1500, by = 250)
+  ) +
+  labs(
+    title = "Distribución de la distancia al Valenbisi más cercano",
+    x = "Distancia (m)",
+    y = "Densidad"
+  ) + 
+  theme_minimal()
+
+# Acumulado:
+ggplot(df_distancias, aes(x = Distancia_Minima, color = Transporte)) +
+  stat_ecdf(geom = "step", size = 1) +
+  scale_color_manual(values = c("EMT" = "#E69F00", "FGV" = "#56B4E9")) +
+  geom_vline(xintercept = 300, linetype = "dashed", color = "red", alpha = 0.5) +
+  xlim(0, 1000) +
+  labs(
+    title = "Porcentaje de paradas con Valenbisi a distancia X",
+    subtitle = "La línea roja indica el umbral de 300 metros",
+    x = "Distancia (metros)",
+    y = "Porcentaje Acumulado (0 a 1)"
+  ) +
+  theme_minimal()
+```
+
+Javi:
+
+```{r}
+ggplot() +
+  geom_sf(data = hex%>% group_by(situacion) %>% summarise(), aes(fill = situacion), colour = NA) +
+  geom_sf(data = barrios_dom, fill = NA, colour = "white") +
+  geom_sf_text(data = filter(barrios_dom, coddistbar %in% top), aes(label = nombre), size = 2.5) +
+  scale_fill_manual(values = c("grey75", "#ee938c", "#e34948", "#9e2324"), name = NULL) +
+  theme_void()
+```
+
+```{r}
+colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) #qué cubre cada modo
+hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) #se complementan los medios? NO 
 ```
