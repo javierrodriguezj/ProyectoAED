@@ -1,6 +1,8 @@
 ---
 title: "sara"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 # Descarga de datos:
@@ -410,12 +412,12 @@ poligonos_barrios <- barrios |>
 
 
 #unimos los poligonos al df de pobs, identificando el nombre de variables con el argumento by()
-pob <- pob |>
-  left_join(poligonos_barrios,
-            by = c("distrito" = "coddistrit", "barrio" = "codbarrio")) |>
-  st_as_sf() # sf == Simple Features es para que, por defecto, siempre arrastre la variable geometry (volverlo un objeto espacial, digamos)
-
-st_geometry(pob) <- "geom_barrio"   # nombre claro para la geometría activa
+# pob <- pob |>
+#   st_join(poligonos_barrios,
+#             by = c("distrito" = "coddistrit", "barrio" = "codbarrio")) |>
+#   st_as_sf() # sf == Simple Features es para que, por defecto, siempre arrastre la variable geometry (volverlo un objeto espacial, digamos)
+# 
+# st_geometry(pob) <- "geom_barrio"   # nombre claro para la geometría activa
 
 
 ## hacemos lo mismo pero ahora con distritos
@@ -424,19 +426,25 @@ distritos_unidos <- distritos |>
   st_make_valid() |>
   mutate(coddistrit = as.integer(coddistrit)) |>
   group_by(coddistrit) |>
-  summarise(nombre_distrito = first(nombre), .groups = "drop")  # une las piezas
+  summarise(nombre_distrito = first(nombre), .groups = "drop") # une las piezas
 
-fila <- match(pob$distrito, distritos_unidos$coddistrit)
-pob$nombre_distrito <- distritos_unidos$nombre_distrito[fila]
-pob$geom_distrito   <- st_geometry(distritos_unidos)[fila]   # 2ª columna de geometría
+distritos_unidos <- distritos |>
+  st_make_valid() |>
+  mutate(coddistrit = as.integer(coddistrit)) |>
+  group_by(coddistrit) |>
+  summarise(nombre_distrito = first(nombre), .groups = "drop")
 
-# El Port no tiene población pero su superficie cuenta en el distrito 11.
-pob <- pob |>
-  group_by(distrito) |>
-  mutate(densidad_distrito_hab_ha = sum(personas, na.rm = TRUE) /
-                                    sum(superficie_ha, na.rm = TRUE)) |>
-  ungroup() |>
-  relocate(nombre_distrito, .after = barrio)
+# fila <- match(pob$distrito, distritos_unidos$coddistrit)
+# pob$nombre_distrito <- distritos_unidos$nombre_distrito[fila]
+# pob$geom_distrito   <- st_geometry(distritos_unidos)[fila]   # 2ª columna de geometría
+# 
+# # El Port no tiene población pero su superficie cuenta en el distrito 11.
+# pob <- pob |>
+#   group_by(distrito) |>
+#   mutate(densidad_distrito_hab_ha = sum(personas, na.rm = TRUE) /
+#                                     sum(superficie_ha, na.rm = TRUE)) |>
+#   ungroup() |>
+#   relocate(nombre_distrito, .after = barrio)
 
 
 
@@ -447,46 +455,46 @@ pob <- pob |>
 (hay que ponerlas un poco mejor y mas ajustadas)
 
 ```{r}
-library(ggplot2)
-
-ggplot(pob) +
-  geom_sf(aes(fill = densidad_hab_ha)) +
-  scale_fill_viridis_c() +
-  theme_minimal() +
-  labs(
-    title = "Densidad de población por barrios de Valencia",
-    fill = "Habitantes/ha"
-  )
-
-ggplot(pob) +
-  geom_sf(aes(fill = densidad_hab_ha)) +
-  coord_sf(
-    xlim = c(-0.43, -0.31),
-    ylim = c(39.42, 39.53)
-  ) +  scale_fill_gradient(
-    low = "green",
-    high = "darkblue"
-  )
-  theme_minimal() +
-  labs(
-    title = "Densidad de población en el centro de Valencia",
-    fill = "Habitantes/ha"
-  )
-
-ggplot() +
-  geom_sf(data = pob, aes(fill = densidad_hab_ha)) +coord_sf(
-    xlim = c(-0.43, -0.31),
-    ylim = c(39.42, 39.53),
-    expand = FALSE
-  ) +   scale_fill_gradient(
-    low = "green",
-    high = "darkblue"
-  ) +
-  geom_sf(data = valenbisi, color = "red", size = 1) +
-  theme_minimal() +
-  labs(
-    title = "Densidad de población y estaciones ValenBisi"
-  )
+# library(ggplot2)
+# 
+# ggplot(pob) +
+#   geom_sf(aes(fill = densidad_hab_ha)) +
+#   scale_fill_viridis_c() +
+#   theme_minimal() +
+#   labs(
+#     title = "Densidad de población por barrios de Valencia",
+#     fill = "Habitantes/ha"
+#   )
+# 
+# ggplot(pob) +
+#   geom_sf(aes(fill = densidad_hab_ha)) +
+#   coord_sf(
+#     xlim = c(-0.43, -0.31),
+#     ylim = c(39.42, 39.53)
+#   ) +  scale_fill_gradient(
+#     low = "green",
+#     high = "darkblue"
+#   )
+#   theme_minimal() +
+#   labs(
+#     title = "Densidad de población en el centro de Valencia",
+#     fill = "Habitantes/ha"
+#   )
+# 
+# ggplot() +
+#   geom_sf(data = pob, aes(fill = densidad_hab_ha)) +coord_sf(
+#     xlim = c(-0.43, -0.31),
+#     ylim = c(39.42, 39.53),
+#     expand = FALSE
+#   ) +   scale_fill_gradient(
+#     low = "green",
+#     high = "darkblue"
+#   ) +
+#   geom_sf(data = valenbisi, color = "red", size = 1) +
+#   theme_minimal() +
+#   labs(
+#     title = "Densidad de población y estaciones ValenBisi"
+#   )
 ```
 
 # Preparación de los datos:
@@ -517,6 +525,52 @@ valenbisi_n <- valenbisi_distrito %>% st_drop_geometry() %>% count(coddistrit, n
 datos_transporte <- densidad_distrito %>% left_join(emt_n, by = "coddistrit") %>% left_join(metro_n, by = "coddistrit") %>% left_join(valenbisi_n, by = "coddistrit")%>% mutate(n_emt = replace(n_emt, is.na(n_emt), 0),n_metro = replace(n_metro, is.na(n_metro), 0),n_valenbisi = replace(n_valenbisi, is.na(n_valenbisi), 0))
 
 ```
+
+# AQUI ESTA LO DE LOS BARRIOS
+```{r}
+# Contamos paradas por nombre de barrio (no por codbarrio)
+emt_n <- emt_barrio %>%
+  st_drop_geometry() %>%
+  count(nombre, name = "n_emt")
+
+metro_n <- metro_barrio %>%
+  st_drop_geometry() %>%
+  count(nombre, name = "n_metro")
+
+valenbisi_n <- valenbisi_barrio %>%
+  st_drop_geometry() %>%
+  count(nombre, name = "n_valenbisi")
+
+
+# Creamos barrios únicos usando el nombre
+barrios_unicos <- barrios %>%
+  select(nombre, geometry) %>%
+  distinct()
+
+
+# Densidad por nombre de barrio
+densidad_barrio <- pob %>%
+  st_drop_geometry() %>%
+  select(nombre_barrio, densidad_hab_ha) %>%
+  distinct()
+
+
+# Tabla final
+datos_transporte_barrio <- barrios_unicos %>%
+  left_join(densidad_barrio,
+            by = c("nombre" = "nombre_barrio")) %>%
+  left_join(emt_n, by = "nombre") %>%
+  left_join(metro_n, by = "nombre") %>%
+  left_join(valenbisi_n, by = "nombre") %>%
+  mutate(
+    n_emt = replace(n_emt, is.na(n_emt), 0),
+    n_metro = replace(n_metro, is.na(n_metro), 0),
+    n_valenbisi = replace(n_valenbisi, is.na(n_valenbisi), 0)
+  ) %>%
+  st_as_sf()
+```
+
+
 
 # Exploración inicial:
 
