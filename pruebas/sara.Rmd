@@ -528,46 +528,36 @@ datos_transporte <- densidad_distrito %>% left_join(emt_n, by = "coddistrit") %>
 
 # AQUI ESTA LO DE LOS BARRIOS
 ```{r}
-# Contamos paradas por nombre de barrio (no por codbarrio)
-emt_n <- emt_barrio %>%
-  st_drop_geometry() %>%
-  count(nombre, name = "n_emt")
+#poblacion de cada barrio
+pob_barrio <- pob %>%
+  group_by(coddistrit, codbarrio) %>%
+  summarise(nombre = first(nombre_geo),
+            densidad_hab_ha = first(densidad_hab_ha), .groups = "drop")
 
-metro_n <- metro_barrio %>%
-  st_drop_geometry() %>%
-  count(nombre, name = "n_metro")
+#codigos de distrito y barrio
+codigos <- pob_barrio %>% select(coddistrit, codbarrio)
 
-valenbisi_n <- valenbisi_barrio %>%
-  st_drop_geometry() %>%
-  count(nombre, name = "n_valenbisi")
+# Contamos paradas por barrio (por código, no por nombre)
+emt_n_barrio <- st_join(emt, codigos) %>% st_drop_geometry() %>%
+  filter(!is.na(codbarrio)) %>% count(coddistrit, codbarrio, name = "n_emt")
 
+metro_n_barrio <- st_join(fgv, codigos) %>% st_drop_geometry() %>%
+  filter(!is.na(codbarrio)) %>% count(coddistrit, codbarrio, name = "n_metro")
 
-# Creamos barrios únicos usando el nombre
-barrios_unicos <- barrios %>%
-  select(nombre, geometry) %>%
-  distinct()
+valenbisi_n_barrio <- st_join(valenbisi, codigos) %>% st_drop_geometry() %>%
+  filter(!is.na(codbarrio)) %>% count(coddistrit, codbarrio, name = "n_valenbisi")
 
+# Tabla final: una fila por barrio
+datos_transporte_barrio <- pob_barrio %>%
+  left_join(emt_n_barrio,       by = c("coddistrit", "codbarrio")) %>%
+  left_join(metro_n_barrio,     by = c("coddistrit", "codbarrio")) %>%
+  left_join(valenbisi_n_barrio, by = c("coddistrit", "codbarrio")) %>%
+  mutate(across(c(n_emt, n_metro, n_valenbisi), ~ coalesce(.x, 0L)))
 
-# Densidad por nombre de barrio
-densidad_barrio <- pob %>%
-  st_drop_geometry() %>%
-  select(nombre_barrio, densidad_hab_ha) %>%
-  distinct()
-
-
-# Tabla final
-datos_transporte_barrio <- barrios_unicos %>%
-  left_join(densidad_barrio,
-            by = c("nombre" = "nombre_barrio")) %>%
-  left_join(emt_n, by = "nombre") %>%
-  left_join(metro_n, by = "nombre") %>%
-  left_join(valenbisi_n, by = "nombre") %>%
-  mutate(
-    n_emt = replace(n_emt, is.na(n_emt), 0),
-    n_metro = replace(n_metro, is.na(n_metro), 0),
-    n_valenbisi = replace(n_valenbisi, is.na(n_valenbisi), 0)
-  ) %>%
-  st_as_sf()
+# Comprobaciones
+nrow(datos_transporte_barrio)                          # 87 barrios
+sum(is.na(datos_transporte_barrio$densidad_hab_ha))    # solo barrios sin población
+sum(datos_transporte_barrio$n_valenbisi)               # 273 estaciones
 ```
 
 
@@ -664,21 +654,12 @@ La población de Valencia no se distribuye de manera uniforme entre sus distrito
 En primer lugar, se va a analizar la distribución de la densidad de población de los distritos de la ciudad de Valencia. Para ello, se grafica un mapa de Valencia coloreado en base a la densidad.
 
 ```{r}
-ggplot(datos_transporte) +
-  geom_sf(aes(fill = densidad)) +
-  coord_sf(
-    xlim = c(-0.43, -0.31),
-    ylim = c(39.42, 39.53)
-  ) + 
-  scale_fill_gradient(
-    low = "#FF69B4",
-    high = "#8B0A50"
-  ) +
+ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = densidad_hab_ha)) +
+  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
+  scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
   theme_minimal() +
-  labs(
-    title = "Densidad de población en el centro de Valencia",
-    fill = "Habitantes/ha"
-  )
+  labs(title = "Densidad de población por barrio", fill = "Habitantes/ha")
 ```
 
 Como se puede observar en el mapa, los distritos con menor densidad de población se muestran en un tono más claro y se van oscureciendo a medida que la densidad aumenta. Esto nos permite ver a simple vista qué distritos deberían necesitar, en principio, una mayor cobertura de transporte público, algo que analizaremos a continuación para ver si realmente se cumple.
@@ -686,129 +667,58 @@ Como se puede observar en el mapa, los distritos con menor densidad de població
 ### ¿Cómo se distribuyen las redes de transporte?
 
 ```{r}
-library(patchwork)
-
-g1<-ggplot(datos_transporte) +
+g1 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_emt)) +
-  coord_sf(
-    xlim = c(-0.43, -0.31),
-    ylim = c(39.42, 39.53)
-  ) + 
-  scale_fill_gradient(
-    low = "lightblue",
-    high = "darkblue"
-  ) +
-  theme_minimal() +
-  labs(
-    title = "Paradas de emt por distrito",
-    fill = "nº paradas"
-  )+theme(
-    axis.text = element_blank(),
-    axis.ticks = element_blank()
-  )
+  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Paradas de EMT por barrio", fill = "nº paradas")
 
-g2<-ggplot(datos_transporte) +
+g2 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_metro)) +
-  coord_sf(
-    xlim = c(-0.43, -0.31),
-    ylim = c(39.42, 39.53)
-  ) + 
-  scale_fill_gradient(
-    low = "red",
-    high = "darkred"  ) +
-  theme_minimal() +
-  labs(
-    title = "Paradas de metroValencia por distrito",
-    fill = "nº paradas"
-  )+theme(
-    axis.text = element_blank(),
-    axis.ticks = element_blank()
-  )
+  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
+  scale_fill_gradient(low = "red", high = "darkred") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Paradas de Metrovalencia por barrio", fill = "nº paradas")
 
-g3<-ggplot(datos_transporte) +
+g3 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_valenbisi)) +
-  coord_sf(
-    xlim = c(-0.43, -0.31),
-    ylim = c(39.42, 39.53)
-  ) + 
-  scale_fill_gradient(
-    low = "lightgreen",
-    high = "darkgreen"  ) +
-  theme_minimal() +
-  labs(
-    title = "Paradas de valenbisi por distrito",
-    fill = "nº paradas"
-  )+theme(
-    axis.text = element_blank(),
-    axis.ticks = element_blank()
-  )
+  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
+  scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Estaciones de Valenbisi por barrio", fill = "nº estaciones")
 
 g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
 
 ```{r}
-datos_transporte %>%
+datos_transporte_barrio <- datos_transporte_barrio %>%
+  mutate(transporte_total = n_emt + n_metro + n_valenbisi,
+         ratio_transporte_densidad = ifelse(densidad_hab_ha > 0,
+                                            transporte_total / densidad_hab_ha, NA))
+
+datos_transporte_barrio %>%
   st_drop_geometry() %>%
-  select(nombre_distrito, densidad, n_emt, n_metro, n_valenbisi) %>%
-  arrange(desc(densidad))
+  select(nombre, densidad_hab_ha, n_emt, n_metro, n_valenbisi, transporte_total) %>%
+  arrange(desc(densidad_hab_ha))
 
-datos_transporte <- datos_transporte %>%
-  mutate(
-    transporte_total = n_emt + n_metro + n_valenbisi
-  )
-
-datos_transporte %>%
-  st_drop_geometry() %>%
-  select(nombre_distrito, densidad, transporte_total) %>%
-  arrange(desc(transporte_total))
-
-datos_transporte <- datos_transporte %>%
-  mutate(
-    ratio_transporte_densidad = transporte_total / densidad
-  )
-
-cor(datos_transporte$densidad,
-    datos_transporte$transporte_total,
+cor(datos_transporte_barrio$densidad_hab_ha,
+    datos_transporte_barrio$transporte_total,
     use = "complete.obs")
 
-ggplot(datos_transporte) +
+ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = transporte_total)) +
-  scale_fill_gradient(
-    low = "white",
-    high = "blue"
-  ) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
   theme_minimal() +
-  theme(
-    axis.text = element_blank(),
-    axis.ticks = element_blank(),
-    panel.grid = element_blank()
-  ) +
-  labs(
-    title = "Transporte total por distrito",
-    fill = "Transporte"
-  )+  coord_sf(
-    xlim = c(-0.43, -0.31),
-    ylim = c(39.42, 39.53)
-  ) 
+  theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
+  labs(title = "Transporte total por barrio", fill = "Transporte")
 
-ggplot(datos_transporte) +
+ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = ratio_transporte_densidad)) +
-  scale_fill_gradient(
-    low = "white",
-    high = "blue"
-  ) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
   theme_minimal() +
-  theme(
-    axis.text = element_blank(),
-    axis.ticks = element_blank(),
-    panel.grid = element_blank()
-  ) +
-  labs(
-    title = "Oferta de transporte respecto a la densidad de población",
-    fill = "Transporte/densidad"
-  )+  coord_sf(
-    xlim = c(-0.43, -0.31),
-    ylim = c(39.42, 39.53)
-  ) 
-
+  theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
+  labs(title = "Oferta de transporte respecto a la densidad de población", fill = "Transporte/densidad")
 ```
