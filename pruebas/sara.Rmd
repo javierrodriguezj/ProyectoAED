@@ -516,28 +516,29 @@ metro_distrito <- st_join(fgv, distritos_unidos)
 valenbisi_distrito <- st_join(valenbisi, distritos_unidos)
 
 
-# A continuación, contamos cuántas hay por distrito
+#cuantos por distrito
 emt_n <- emt_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n_emt")
 metro_n <- metro_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n_metro")
 valenbisi_n <- valenbisi_distrito %>% st_drop_geometry() %>% count(coddistrit, name = "n_valenbisi")
 
-#Finalmente, unimos estos datos obtenidos a la tabla que hemos creado anteriormente
+#Unimos todo
 datos_transporte <- densidad_distrito %>% left_join(emt_n, by = "coddistrit") %>% left_join(metro_n, by = "coddistrit") %>% left_join(valenbisi_n, by = "coddistrit")%>% mutate(n_emt = replace(n_emt, is.na(n_emt), 0),n_metro = replace(n_metro, is.na(n_metro), 0),n_valenbisi = replace(n_valenbisi, is.na(n_valenbisi), 0))
+#filtramos tambien que tengan al menos valenbisi
+datos_transporte <- datos_transporte%>% filter(n_valenbisi>0)
 
 ```
 
 # AQUI ESTA LO DE LOS BARRIOS
 ```{r}
-#poblacion de cada barrio
-pob_barrio <- pob %>%
+#poblacion de cada barrio que tenga al menos valenbisi
+pob_barrio <- pob %>%filter(coddistrit %in% datos_transporte$coddistrit)%>%
   group_by(coddistrit, codbarrio) %>%
   summarise(nombre = first(nombre_geo),
             densidad_hab_ha = first(densidad_hab_ha), .groups = "drop")
 
 #codigos de distrito y barrio
 codigos <- pob_barrio %>% select(coddistrit, codbarrio)
-
-# Contamos paradas por barrio (por código, no por nombre)
+#Contamos paradas por barrio [codigo]
 emt_n_barrio <- st_join(emt, codigos) %>% st_drop_geometry() %>%
   filter(!is.na(codbarrio)) %>% count(coddistrit, codbarrio, name = "n_emt")
 
@@ -547,17 +548,12 @@ metro_n_barrio <- st_join(fgv, codigos) %>% st_drop_geometry() %>%
 valenbisi_n_barrio <- st_join(valenbisi, codigos) %>% st_drop_geometry() %>%
   filter(!is.na(codbarrio)) %>% count(coddistrit, codbarrio, name = "n_valenbisi")
 
-# Tabla final: una fila por barrio
+#un barrio por fila
 datos_transporte_barrio <- pob_barrio %>%
   left_join(emt_n_barrio,       by = c("coddistrit", "codbarrio")) %>%
   left_join(metro_n_barrio,     by = c("coddistrit", "codbarrio")) %>%
   left_join(valenbisi_n_barrio, by = c("coddistrit", "codbarrio")) %>%
   mutate(across(c(n_emt, n_metro, n_valenbisi), ~ coalesce(.x, 0L)))
-
-# Comprobaciones
-nrow(datos_transporte_barrio)                          # 87 barrios
-sum(is.na(datos_transporte_barrio$densidad_hab_ha))    # solo barrios sin población
-sum(datos_transporte_barrio$n_valenbisi)               # 273 estaciones
 ```
 
 
@@ -656,7 +652,6 @@ En primer lugar, se va a analizar la distribución de la densidad de población 
 ```{r}
 ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = densidad_hab_ha)) +
-  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
   scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
   theme_minimal() +
   labs(title = "Densidad de población por barrio", fill = "Habitantes/ha")
@@ -669,21 +664,18 @@ Como se puede observar en el mapa, los distritos con menor densidad de població
 ```{r}
 g1 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_emt)) +
-  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
   scale_fill_gradient(low = "lightblue", high = "darkblue") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Paradas de EMT por barrio", fill = "nº paradas")
 
 g2 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_metro)) +
-  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
   scale_fill_gradient(low = "red", high = "darkred") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Paradas de Metrovalencia por barrio", fill = "nº paradas")
 
 g3 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_valenbisi)) +
-  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
   scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Estaciones de Valenbisi por barrio", fill = "nº estaciones")
@@ -709,7 +701,6 @@ cor(datos_transporte_barrio$densidad_hab_ha,
 ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = transporte_total)) +
   scale_fill_gradient(low = "white", high = "blue") +
-  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
   theme_minimal() +
   theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
   labs(title = "Transporte total por barrio", fill = "Transporte")
@@ -717,8 +708,10 @@ ggplot(datos_transporte_barrio) +
 ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = ratio_transporte_densidad)) +
   scale_fill_gradient(low = "white", high = "blue") +
-  coord_sf(xlim = c(-0.43, -0.31), ylim = c(39.42, 39.53)) +
   theme_minimal() +
   theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
   labs(title = "Oferta de transporte respecto a la densidad de población", fill = "Transporte/densidad")
 ```
+
+
+
