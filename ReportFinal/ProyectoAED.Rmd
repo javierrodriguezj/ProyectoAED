@@ -282,6 +282,9 @@ df.transporte <- bind_rows(
   df.fgv_paradas %>% transmute(gid=as.integer(gid), empresa="FGV", lineas=strsplit(linea, ",")),
 ) %>% rename(geometria=geometry) %>%
   mutate(empresa=as.factor(empresa))
+
+paradas <- split(df.transporte, df.transporte$empresa)
+
 head(as_tibble(df.transporte))
 ```
 
@@ -371,10 +374,7 @@ zona_tipo = "distrito"
 # )
 # ZONAS_DOMINIO2 <- sort(unique(zonas_con_valenbisi$id))
 
-zonas_con_valenbisi <- df.transporte %>% 
-  as_tibble() %>% 
-  filter(empresa == "Valenbisi") %>% 
-  st_as_sf(sf_column_name = "geometria") %>% 
+zonas_con_valenbisi <- paradas$Valenbisi %>% 
   st_join(df.pob %>% filter(tipo == zona_tipo) %>% select(id)) %>% 
   pull(id) %>% 
   unique() %>% 
@@ -464,18 +464,6 @@ g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 Preparamos las paradas de cada modo, el dominio de estudio (zonas con al menos una estación Valenbisi) y los barrios que caen dentro de él. Mantenemos todas las paradas de EMT y FGV, también las de fuera del dominio, porque una parada de fuera puede dar servicio a un punto de dentro: si las quitáramos, aparecerían desiertos falsos junto al borde.
 
 ```{r}
-# Paradas de cada modo (todas, también las de fuera de València)
-paradas_de <- function(modo) {
-  df.transporte %>%
-    as_tibble() %>%
-    filter(empresa == modo) %>%
-    st_as_sf(sf_column_name = "geometria") %>%
-    select(geometria)
-}
-df.vb_geo  <- paradas_de("Valenbisi")
-df.emt_geo <- paradas_de("EMT")
-df.fgv_geo <- paradas_de("FGV")
-
 # Dominio: unión de las zonas con al menos una estación Valenbisi
 dominio <- df.pob %>%
   filter(tipo == zona_tipo, id %in% zonas_con_valenbisi) %>%
@@ -493,11 +481,11 @@ Justificar el umbral de cercanía:
 
 ```{r}
 # Para justificar el umbral solo usamos las paradas dentro del dominio
-df.emt_dom <- df.emt_geo %>% st_filter(dominio)
-df.fgv_dom <- df.fgv_geo %>% st_filter(dominio)
+df.emt_dom <- paradas$EMT %>% st_filter(dominio)
+df.fgv_dom <- paradas$FGV %>% st_filter(dominio)
 
-min_dist_emt <- st_distance(df.emt_dom, df.vb_geo) %>% apply(1, min) %>% as.numeric()
-min_dist_fgv <- st_distance(df.fgv_dom, df.vb_geo) %>% apply(1, min) %>% as.numeric()
+min_dist_emt <- dist_min(df.emt_dom, paradas$Valenbisi)
+min_dist_fgv <- dist_min(df.fgv_dom, paradas$Valenbisi)
 
 df_distancias <- data.frame(
   Transporte = c(rep("EMT", length(min_dist_emt)), rep("FGV", length(min_dist_fgv))),
@@ -535,10 +523,9 @@ centros <- st_centroid(rejilla)     # un centro por hexágono, ya filtrados
 Ahora calculamos las distancias entre los centros de los hexágonos y cada uno de los medios de transporte.
 
 ```{r}
-# Distancia de cada centro a la parada más cercana de cada modo
-dist_vb  <- apply(st_distance(centros, df.vb_geo),  1, min)
-dist_emt <- apply(st_distance(centros, df.emt_geo), 1, min)
-dist_fgv <- apply(st_distance(centros, df.fgv_geo), 1, min)
+dist_vb  <- dist_min(centros, paradas$Valenbisi)
+dist_emt <- dist_min(centros, paradas$EMT)
+dist_fgv <- dist_min(centros, paradas$FGV)
 
 # Cobertura
 
