@@ -386,6 +386,11 @@ ggplot() +
   theme(strip.text = element_text(face = "bold", hjust = 0))
 ```
 
+```{r}
+# Filtramos las zonas non-gratas
+df.pob <- df.pob %>% filter(tipo==zona_tipo, id %in% zonas_con_valenbisi) %>% st_union()
+```
+
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
 ```{r}
