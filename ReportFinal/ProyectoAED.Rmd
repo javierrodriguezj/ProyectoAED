@@ -276,7 +276,7 @@ df.geom_distritos <- df.geom_distritos %>%
   mutate(coddistrit = as.integer(coddistrit)) %>%
   group_by(coddistrit) %>%
   summarise(nombre_distrito = first(nombre), .groups = "drop") %>%
-  mutate(superficie_distrito = as.numeric(st_area(geometry)) / 1e6) %>%
+  mutate(superficie_distrito = as.numeric(st_area(geometry)) / 1e6) %>% ## Algunas geometrias habia nan's
   rename(geometria_distrito = all_of(attr(df.geom_distritos, "sf_column")))
 
 # Lo juntamos a df.pob
@@ -355,32 +355,7 @@ ggplot() +
   theme(strip.text = element_text(face = "bold", hjust = 0))
 ```
 
-```{r}
-vb_distrito <- st_join(df.valenbisi, barrios["coddistrit"]) #comprueba si el punto valenbisi está dentro del polígono del distrito y añade el código del distrito
-
-DISTRITOS_DOMINIO <- sort(unique(vb_distrito$coddistrit))
-
-dominio      <- distritos %>% filter(coddistrit %in% DISTRITOS_DOMINIO) %>% st_union()
-zona_calculo <- st_buffer(dominio, BUFFER_BORDE) #nos crea un polígono con un borde
-
-distritos %<>%
-  transmute(coddistrit = as.integer(coddistrit), area_km2 = as.numeric(st_area(geometry)) / 1e6, nombre)
-
-
-
-distritos_mapa <- distritos %>% mutate(dentro = coddistrit %in% DISTRITOS_DOMINIO)
-caja <- st_bbox(zona_calculo)
-
-ggplot() +
-  geom_sf(data = distritos_mapa, aes(fill = dentro), colour = "grey75", linewidth = 0.25) +
-  geom_sf(data = st_sf(geometry = zona_calculo), fill = NA, colour = "grey50", linetype = "dashed") +
-  geom_sf(data = paradas, aes(colour = modo), size = 0.45, show.legend = FALSE) +
-  facet_wrap(~ modo) +
-  scale_fill_manual(values = c(`TRUE` = "white", `FALSE` = "grey92"), guide = "none") +
-  scale_colour_manual(values = COL_MODO) +
-  coord_sf(xlim = caja[c("xmin", "xmax")], ylim = caja[c("ymin", "ymax")], expand = FALSE) +
-  theme_void() +
-  theme(strip.text = element_text(face = "bold", hjust = 0))
+```{}
 ```
 
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
