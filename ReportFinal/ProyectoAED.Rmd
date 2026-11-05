@@ -503,6 +503,33 @@ g3 <- ggplot(dom_barrio_parada) +
 g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
 
+```{r}
+datos_transporte_barrio <- datos_transporte_barrio %>% mutate(coddistbar = as.integer(coddistbar)) %>% left_join(df.pob %>% filter(tipo == "barrio") %>% st_drop_geometry() %>% select(coddistbar, personas, superficie, densidad), by = "coddistbar") %>% mutate(transporte_total = n_emt + n_metro + n_valenbisi, ratio_transporte_densidad = ifelse(densidad > 0, transporte_total / densidad, NA))
+
+datos_transporte_barrio %>%
+  st_drop_geometry() %>%
+  select(nombre, densidad, n_emt, n_metro, n_valenbisi, transporte_total) %>%
+  arrange(desc(densidad))
+
+cor(datos_transporte_barrio$densidad,
+    datos_transporte_barrio$transporte_total,
+    use = "complete.obs")
+
+ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = transporte_total)) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  theme_minimal() +
+  theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
+  labs(title = "Transporte total por barrio", fill = "Transporte")
+
+ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = ratio_transporte_densidad)) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  theme_minimal() +
+  theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
+  labs(title = "Oferta de transporte respecto a la densidad de población", fill = "Transporte/densidad")
+```
+
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
 
 Preparamos las paradas de cada modo, el dominio de estudio (zonas con al menos una estación Valenbisi) y los barrios que caen dentro de él. Mantenemos todas las paradas de EMT y FGV, también las de fuera del dominio, porque una parada de fuera puede dar servicio a un punto de dentro: si las quitáramos, aparecerían desiertos falsos junto al borde.
