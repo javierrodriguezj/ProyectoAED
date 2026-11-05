@@ -358,33 +358,53 @@ ggplot() +
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
 ```{r}
-g0 <- ggplot(datos_transporte_barrio) +
-  geom_sf(aes(fill = densidad_hab_ha)) +
+#poblacion de cada barrio que tenga al menos valenbisi
+# pob_barrio <- pob %>%filter(coddistrit %in% datos_transporte$coddistrit)%>%
+#   group_by(coddistrit, codbarrio) %>%
+#   summarise(nombre = first(nombre_geo),
+#             densidad_hab_ha = first(densidad_hab_ha), .groups = "drop")
+
+
+# EMT: asignar cada parada al barrio donde cae
+emt_n_barrio <- st_join(df.emt, df.geom_barrios) %>% st_drop_geometry() %>% filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_emt")
+
+metro_n_barrio <- st_join(df.fgv_paradas, df.geom_barrios) %>% st_drop_geometry() %>%
+  filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_metro")
+
+valenbisi_n_barrio <- st_join(df.valenbisi, df.geom_barrios) %>% st_drop_geometry() %>% filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_valenbisi")
+
+# unimos para cada barrio
+datos_transporte_barrio <- df.geom_barrios %>% left_join(emt_n_barrio, by = "coddistbar") %>% left_join(metro_n_barrio, by = "coddistbar") %>% left_join(valenbisi_n_barrio, by = "coddistbar") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
+```
+
+```{r}
+g0 <- ggplot(df.pob) +
+  geom_sf(aes(fill = densidad)) +
   scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
   theme_minimal() +
   labs(title = "Densidad de población por barrio", fill = "Habitantes/ha")
 
-g1 <- ggplot(datos_transporte_barrio) +
-  geom_sf(aes(fill = n_emt)) +
-  scale_fill_gradient(low = "lightblue", high = "darkblue") +
-  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-  labs(title = "Paradas de EMT por barrio", fill = "nº paradas")
-
-g2 <- ggplot(datos_transporte_barrio) +
-  geom_sf(aes(fill = n_metro)) +
-  scale_fill_gradient(low = "red", high = "darkred") +
-  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-  labs(title = "Paradas de Metrovalencia por barrio", fill = "nº paradas")
-
-g3 <- ggplot(datos_transporte_barrio) +
-  geom_sf(aes(fill = n_valenbisi)) +
-  scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
-  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-  labs(title = "Estaciones de Valenbisi por barrio", fill = "nº estaciones")
-
-
-
-g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
+# g1 <- ggplot(df.transporte %>% filter(empresa == "EMT"))) +
+#   geom_sf(aes(fill = n_emt)) +
+#   scale_fill_gradient(low = "lightblue", high = "darkblue") +
+#   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+#   labs(title = "Paradas de EMT por barrio", fill = "nº paradas")
+# 
+# g2 <- ggplot(datos_transporte_barrio) +
+#   geom_sf(aes(fill = n_metro)) +
+#   scale_fill_gradient(low = "red", high = "darkred") +
+#   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+#   labs(title = "Paradas de Metrovalencia por barrio", fill = "nº paradas")
+# 
+# g3 <- ggplot(datos_transporte_barrio) +
+#   geom_sf(aes(fill = n_valenbisi)) +
+#   scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
+#   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+#   labs(title = "Estaciones de Valenbisi por barrio", fill = "nº estaciones")
+# 
+# 
+# 
+# g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
 
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
