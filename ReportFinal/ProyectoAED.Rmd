@@ -387,9 +387,6 @@ g3 <- ggplot(datos_transporte_barrio) +
 g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
 
-```{}
-```
-
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
 
 Justificar el umbral de cercanía:
