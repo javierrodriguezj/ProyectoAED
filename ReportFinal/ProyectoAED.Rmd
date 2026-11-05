@@ -386,6 +386,12 @@ ggplot() +
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
 ```{r}
+g0 <- ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = densidad_hab_ha)) +
+  scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
+  theme_minimal() +
+  labs(title = "Densidad de población por barrio", fill = "Habitantes/ha")
+
 g1 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_emt)) +
   scale_fill_gradient(low = "lightblue", high = "darkblue") +
@@ -404,16 +410,12 @@ g3 <- ggplot(datos_transporte_barrio) +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Estaciones de Valenbisi por barrio", fill = "nº estaciones")
 
-g1 + g2 + g3 + plot_layout(ncol = 2)
+
+
+g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
 
-```{r}
-# Añadir arriba:
-ggplot(datos_transporte_barrio) +
-  geom_sf(aes(fill = densidad_hab_ha)) +
-  scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
-  theme_minimal() +
-  labs(title = "Densidad de población por barrio", fill = "Habitantes/ha")
+```{}
 ```
 
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
