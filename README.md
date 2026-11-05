@@ -38,6 +38,12 @@ El documento que vamos a entregar es `./ReportFinal/ProyectoAED.Rmd`. Está dent
 - `ReportFinal/`: Carpeta generata por el *template*, donde está el .Rmd definitivo con todo nuestro código y que compilaremos como .pdf.
 - `temp`: Cualquier cosa que necesitemos conservar y compartir con el resto del grupo que hayamos hecho en sucio.
 
+# Convenio de notación
+
+- Variables siempre en minúscula todo. A excepción de las que denominemos *constantes*, que estarán todo en mayúscula.
+- Variables tipo `data.frame`: `df.<nombre>`.
+- Variables tipo `bool`: `is_<nombre>`.
+
 # Workflow
 
 En `pruebas/`, cada uno tiene su propio .Rmd donde podemos hacer nuestras pruebas y ponerlas en común, antes de escribir directamente sobre el documento final. Estos .Rmd no están estrictamente "bloqueados" a cada uno de nosotros; Ángel puede editar `javi.md` si lo ve necesario y a Javi le parece bien.
