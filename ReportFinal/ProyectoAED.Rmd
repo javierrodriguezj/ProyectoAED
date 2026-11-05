@@ -394,11 +394,11 @@ ggplot() +
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
 ```{r}
-g0 <- ggplot(datos_transporte_barrio) +
-  geom_sf(aes(fill = densidad_hab_ha)) +
+g0 <- ggplot(df.pob) +
+  geom_sf(aes(fill = densidad)) +
   scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
-  theme_minimal() +
-  labs(title = "Densidad de población por barrio", fill = "Habitantes/ha")
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Densidad de población por barrio", fill = "Habitantes/km^2")
 
 g1 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_emt)) +
@@ -417,7 +417,6 @@ g3 <- ggplot(datos_transporte_barrio) +
   scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Estaciones de Valenbisi por barrio", fill = "nº estaciones")
-
 
 
 g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
