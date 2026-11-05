@@ -8,5 +8,6 @@ data
 *.log
 ReportFinal/ProyectoAED.tex
 ReportFinal/ProyectoAED.pdf
+*.pdf
 
 *_deprecated*
