@@ -367,7 +367,7 @@ head(as_tibble(df.pob))
 Mapas:
 
 ```{r}
-zona_tipo <- "barrio"   # distrito o barrio
+zona_tipo <- "distrito"   # distrito o barrio
 zonas <- df.pob %>%
   filter(tipo == zona_tipo) %>%
   mutate(cod = if_else(tipo == "barrio", coddistbar, id)) #zonas y codigo según sean distritos o barrios
@@ -378,24 +378,20 @@ zonas_con_valenbisi <- paradas$Valenbisi %>%
   pull(cod) %>% unique() %>% sort()
 
 # regimen de lo que se grafica
-zonas_dom        <- zonas %>% filter(cod %in% zonas_con_valenbisi)
-dominio          <- st_union(zonas_dom)
+zonas_dom<- zonas %>% filter(cod %in% zonas_con_valenbisi)
+dominio <- st_union(zonas_dom)
 zonas_unificadas <- st_buffer(dominio, BUFFER_BORDE)
-caja             <- st_bbox(zonas_unificadas)
+caja <- st_bbox(zonas_unificadas)
 
-# barrios
+# barrios dentro del dominio
 barrios     <- df.pob %>%
   filter(tipo == "barrio") %>%
   mutate(is_dentro = coddistbar %in% zonas_dom$coddistbar)
 barrios_dom <- barrios %>% filter(is_dentro)
 
-#fondo del mapa
-fondo <- zonas %>%
-  mutate(is_dentro = cod %in% zonas_con_valenbisi) %>%
-  distinct(cod, .keep_all = TRUE)
-
+#Grafica
 ggplot() +
-  geom_sf(data = fondo, aes(fill = is_dentro), colour = "grey75", linewidth = 0.25) +
+  geom_sf(data = barrios, aes(fill = is_dentro), colour = "grey75", linewidth = 0.25) +
   geom_sf(data = st_sf(geometry = zonas_unificadas), fill = NA, colour = "grey50", linetype = "dashed") +
   geom_sf(data = df.transporte, aes(colour = empresa), size = 0.45, show.legend = FALSE) +
   facet_wrap(~ empresa) +
@@ -426,25 +422,28 @@ datos_transporte_barrio <- df.geom_barrios %>% left_join(emt_n_barrio, by = "cod
 ```
 
 ```{r}
-g0 <- ggplot(df.pob) +
+dom_barrio_parada <- datos_transporte_barrio %>%
+  filter(as.integer(coddistbar) %in% barrios_dom$coddistbar)
+
+g0 <- ggplot(barrios_dom) +
   geom_sf(aes(fill = densidad)) +
   scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Densidad de población por barrio", fill = "Habitantes/km^2")
 
-g1 <- ggplot(datos_transporte_barrio) +
+g1 <- ggplot(dom_barrio_parada) +
   geom_sf(aes(fill = n_emt)) +
   scale_fill_gradient(low = "lightblue", high = "darkblue") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Paradas de EMT por barrio", fill = "nº paradas")
 
-g2 <- ggplot(datos_transporte_barrio) +
+g2 <- ggplot(dom_barrio_parada) +
   geom_sf(aes(fill = n_metro)) +
   scale_fill_gradient(low = "red", high = "darkred") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Paradas de Metrovalencia por barrio", fill = "nº paradas")
 
-g3 <- ggplot(datos_transporte_barrio) +
+g3 <- ggplot(dom_barrio_parada) +
   geom_sf(aes(fill = n_valenbisi)) +
   scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
