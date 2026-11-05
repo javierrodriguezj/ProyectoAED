@@ -393,8 +393,20 @@ g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 Justificar el umbral de cercanía:
 
 ```{r}
-min_dist_emt <- as.numeric(apply(st_distance(df.emt, df.valenbisi), 1, min))
-min_dist_fgv <- as.numeric(apply(mat.dist.fgv, 1, min))
+zona_vb <- df.pob %>% filter(tipo == zona_tipo, id %in% zonas_con_valenbisi) %>% st_union()
+df.fgv_geo <- df.fgv_geo %>% st_filter(zona_vb)
+df.emt_geo <- df.emt_geo %>% st_filter(zona_vb)
+
+
+df.vb_geo <- df.transporte %>%
+  as_tibble() %>% 
+  filter(empresa == 'Valenbisi') %>% 
+  st_as_sf(sf_column_name = 'geometria') %>%
+  select('geometria')
+  
+min_dist_emt <- st_distance(df.emt_geo, df.vb_geo) %>% apply(1, min) %>% as.numeric()
+min_dist_fgv <- st_distance(df.fgv_geo, df.vb_geo) %>% apply(1, min) %>% as.numeric()
+
 
 df_distancias <- data.frame(
   Transporte = c(rep("EMT", length(min_dist_emt)), rep("FGV", length(min_dist_fgv))),
@@ -416,17 +428,15 @@ ggplot(df_distancias, aes(x = distancia_minima, fill = Transporte)) +
   theme_minimal()
 
 # Acumulado:
-ggplot(df_distancias, aes(x = Distancia_Minima, color = Transporte)) +
-  stat_ecdf(geom = "step", size = 1) +
-  scale_color_manual(values = c("EMT" = "#E69F00", "FGV" = "#56B4E9")) +
-  geom_vline(xintercept = 300, linetype = "dashed", color = "red", alpha = 0.5) +
-  xlim(0, 1000) +
-  labs(
-    title = "Porcentaje de paradas con Valenbisi a distancia X",
-    subtitle = "La línea roja indica el umbral de 300 metros",
-    x = "Distancia (metros)",
-    y = "Porcentaje Acumulado (0 a 1)"
-  ) +
+ggplot(df_distancias, aes(x = distancia_minima, colour = Transporte)) +
+  stat_ecdf(geom = "step", linewidth = 1) +
+  scale_colour_manual(values = COL_MODO) +
+  geom_vline(xintercept = 250, linetype = "dashed", colour = "grey40") +
+  scale_y_continuous(labels = scales::percent) +
+  coord_cartesian(xlim = c(0, 1000)) +
+  labs(title = "Porcentaje de paradas con Valenbisi a distancia X",
+       subtitle = "La línea discontinua indica el umbral de 300 metros",
+       x = "Distancia (m)", y = "Paradas acumuladas") +
   theme_minimal()
 ```
 
