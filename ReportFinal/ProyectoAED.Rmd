@@ -261,6 +261,8 @@ Los datasets *Valenbisi*, *EMT* y *FGV* tienen muchas columnas que no son releva
 
 Por otro lado, encontramos algunos `NA` en las variables `codvia` y `numportal` de *EMT*. Debido a que son identificativos de cada parada, no son relevantes para el estudio. También encontramos algunos `NA` en las columnas del área de *Barrios* y *Distritos*, lo cual supondrá un problema. Afortunadamente, tenemos la geometría de todas las zonas, por lo que podremos imputar estos valores mediante cálculo directo.
 
+Finalmente, es curioso ver que *Barrios* tiene un elemento duplicado de la variable `coddistbar`, cuando este debería ser un identificador único de cada barrio. Esto se debe a que las entradas "MAHUELLA-TAULADELLA" y "RAFALELL-VISTABELLA" son en realidad en mismo barrio, pero aparecen en filas distintas probablemente porque están separadas geográficamente. Esto se tendrá que tener en cuenta.
+
 # Conseguir un dataset *tidy*
 
 ## Datos de transporte público
@@ -292,7 +294,27 @@ str(df.transporte[1:2,])
 
 ## Datos de los barrios y distritos
 
-El archivo `barrios.zip` contiene varios archivos .xlsx, que son los que realmente contienen los datos que nos interesan. Concretamente, queremos extraer los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. A continuación, extraeremos el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
+En primer lugar se fusionarán "MAHUELLA-TAULADELLA" y "RAFALELL-VISTABELLA" como una única fila, ya que son en realidad el mismo barrio.
+
+```{r}
+filepath <- paste0(savedir, "geom_barrios.geojson")
+df.geom_barrios <- st_read(dsn=filepath, quiet=T) %>% st_transform(CRS_M)
+
+filepath <- paste0(savedir, "geom_distritos.geojson")
+df.geom_distritos <- st_read(dsn=filepath, quiet=T) %>% st_transform(CRS_M)
+
+df.geom_barrios <- df.geom_barrios %>%
+  select(-objectid) %>%
+  group_by(coddistbar, codbarrio, coddistrit) %>%
+  summarise( # summarise une automáticamente las geometrías (st_union)
+    nombre = paste(nombre, collapse = "-"),
+    gis.gis.BARRIOS.area = sum(gis.gis.BARRIOS.area, na.rm = TRUE),
+    .groups = "drop"
+  )
+cat("Ahora ya hay", length(unique(df.geom_barrios$coddistbar)), "coddistbar únicos, y", nrow(df.geom_barrios), "filas en el dataframe.")
+```
+
+El archivo `barrios.zip` contiene varios archivos .xlsx, que son los que realmente contienen los datos que nos interesan. Concretamente, se extraerán los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. Cabe observar que solo hay un archivo `.xlsx` correspondiente al barrio 17.5, que es la entrada duplicada mencionada anteriormente, lo cual refuerza la idea de que ambos son el mismo barrio. A continuación, se extraerá el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
 
 ```{r}
 # Descomprimimos el .zip y listamos los archivos.
@@ -306,24 +328,15 @@ df.pob <- do.call(rbind, lapply(archivos, extraer_densidad))
 df.pob <- df.pob[order(df.pob$distrito, df.pob$barrio), ]
 rownames(df.pob) <- NULL
 
-# Añadimos la geometría de los barrios y distritos
-# Los cargamos:
-filepath <- paste0(savedir, "geom_barrios.geojson")
-df.geom_barrios <- st_read(dsn=filepath, quiet=T) %>% st_transform(CRS_M)
-#head(as_tibble(df.geom_barrios))
-
-filepath <- paste0(savedir, "geom_distritos.geojson")
-df.geom_distritos <- st_read(dsn=filepath, quiet=T) %>% st_transform(CRS_M)
-#head(as_tibble(df.geom_distritos))
-
-# Los unimos:
+# Añadimos la geometría de los barrios y distritos.
 # Creamos dataframe de distritos
 df.geom_distritos <- df.geom_distritos %>%
   st_make_valid() %>%
   mutate(coddistrit = as.integer(coddistrit)) %>%
   group_by(coddistrit) %>%
   summarise(nombre_distrito = first(nombre), .groups = "drop") %>%
-  mutate(superficie_distrito = as.numeric(st_area(geometry)) / 1e6) %>% ## Algunas geometrias habia nan's
+  # Calculamos las áreas a mano porque en el dataset hay NA's.
+  mutate(superficie_distrito = as.numeric(st_area(geometry)) / 1e6) %>% # km²
   rename(geometria_distrito = all_of(attr(df.geom_distritos, "sf_column")))
 
 # Lo juntamos a df.pob
@@ -336,9 +349,9 @@ df.pob <- df.geom_barrios %>%
   rename(nombre_barrio = nombre_barrio_geo, geometria_barrio = all_of(attr(., "sf_column"))) %>%
   left_join(tibble::as_tibble(df.geom_distritos), by = "coddistrit") %>%
   group_by(coddistrit) %>%
+  # Cálculo de la densidad de cada distrito
   mutate(densidad_distrito = sum(personas, na.rm = TRUE) / sum(superficie_barrio, na.rm = TRUE)) %>%
   ungroup() %>%
-  # Hay unas variables en las columnas. Toca hacerla tidy.
   # Creamos columna de personas por distrito
   group_by(coddistrit) %>%
   mutate(personas_distrito = sum(personas, na.rm = TRUE)) %>% ungroup() %>%
