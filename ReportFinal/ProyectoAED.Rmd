@@ -394,6 +394,19 @@ ggplot() +
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
 ```{r}
+# EMT: asignar cada parada al barrio donde cae
+emt_n_barrio <- st_join(df.emt, df.geom_barrios) %>% st_drop_geometry() %>% filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_emt")
+
+metro_n_barrio <- st_join(df.fgv_paradas, df.geom_barrios) %>% st_drop_geometry() %>%
+  filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_metro")
+
+valenbisi_n_barrio <- st_join(df.valenbisi, df.geom_barrios) %>% st_drop_geometry() %>% filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_valenbisi")
+
+# unimos para cada barrio
+datos_transporte_barrio <- df.geom_barrios %>% left_join(emt_n_barrio, by = "coddistbar") %>% left_join(metro_n_barrio, by = "coddistbar") %>% left_join(valenbisi_n_barrio, by = "coddistbar") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
+```
+
+```{r}
 g0 <- ggplot(df.pob) +
   geom_sf(aes(fill = densidad)) +
   scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
