@@ -217,7 +217,7 @@ resumen_rapido <- function(df, nombre = "Dataset") {
 }
 ```
 
-```{r, message=FALSE, warning=FALSE}
+```{r}
 savedir <- '../data/'
 if (!file.exists(savedir)) dir.create(savedir)
 
@@ -362,45 +362,76 @@ df.pob <- df.pob %>%
 head(as_tibble(df.pob[1:3,]))
 ```
 
-# Visualización inicial de los datos
+# Exploración inicial de los datos
 
-Mapas:
+## Transportes
+
+En primer lugar dibujaremos en el mapa todas las paradas de transporte público.
 
 ```{r}
-zona_tipo <- "distrito"   # distrito o barrio
-zonas <- df.pob %>%
-  filter(tipo == zona_tipo) %>%
-  mutate(cod = if_else(tipo == "barrio", coddistbar, id)) #zonas y codigo según sean distritos o barrios
+# Definimos una función para plotear
+plot_mapa_transporte <- function(df_distritos, zonas_unif = NULL, df_transp, bbox = NULL, colores = COL_MODO, fill_zones = TRUE, draw_perimeter = TRUE) {
+  
+  p <- ggplot()
+  if (fill_zones) {
+    p <- p + 
+      geom_sf(data = df_distritos, aes(fill = is_dentro), colour = "grey75", linewidth = 0.25) +
+      scale_fill_manual(values = c(`TRUE` = "white", `FALSE` = "grey92"), guide = "none")
+  } else {
+    p <- p + geom_sf(data = df_distritos, fill = "white", colour = "grey75", linewidth = 0.25)
+  }
+  if (draw_perimeter && !is.null(zonas_unif)) {
+    p <- p + 
+      geom_sf(data = st_sf(geometry = zonas_unif), fill = NA, colour = "grey50", linetype = "dashed")
+  }
+  p <- p + 
+    geom_sf(data = df_transp, aes(colour = empresa), size = 0.45, show.legend = FALSE) +
+    facet_wrap(~ empresa) +
+    scale_colour_manual(values = colores) +
+    theme_void() +
+    theme(strip.text = element_text(face = "bold", hjust = 0))
+  if (!is.null(bbox)) {
+    p <- p + coord_sf(xlim = bbox[c("xmin", "xmax")], 
+                      ylim = bbox[c("ymin", "ymax")], 
+                      expand = TRUE)
+  } else {
+    p <- p + coord_sf(expand = TRUE)
+  }
+  return(p)
+}
+```
 
-# 1 valenbisi en zonas
-paradas <- split(df.transporte, df.transporte$empresa)
-zonas_con_valenbisi <- paradas$Valenbisi %>%
-  st_join(select(zonas, cod)) %>%
-  pull(cod) %>% unique() %>% sort()
+```{r}
+zona_tipo = "barrio"
 
-# regimen de lo que se grafica
-zonas_dom<- zonas %>% filter(cod %in% zonas_con_valenbisi)
-dominio <- st_union(zonas_dom)
-zonas_unificadas <- st_buffer(dominio, BUFFER_BORDE)
+zonas_con_valenbisi <- df.transporte %>% 
+  as_tibble() %>% 
+  filter(empresa == "Valenbisi") %>% 
+  st_as_sf(sf_column_name = "geometria") %>% 
+  st_join(df.pob %>% filter(tipo == zona_tipo) %>% select(id)) %>% 
+  pull(id) %>% 
+  unique() %>% 
+  sort()
+
+zonas_unificadas <- st_buffer(
+  df.pob %>% filter(tipo==zona_tipo) %>% filter(id %in% zonas_con_valenbisi) %>% st_union(), 
+  BUFFER_BORDE
+)
+df.zonas_mapa <- df.pob %>% filter(tipo==zona_tipo) %>% mutate(is_dentro = id %in% zonas_con_valenbisi)
 caja <- st_bbox(zonas_unificadas)
 
-# barrios dentro del dominio
-barrios     <- df.pob %>%
-  filter(tipo == "barrio") %>%
-  mutate(is_dentro = coddistbar %in% zonas_dom$coddistbar)
-barrios_dom <- barrios %>% filter(is_dentro)
+plot_mapa_transporte(
+  df_distritos = df.zonas_mapa, 
+  zonas_unif = zonas_unificadas, 
+  df_transp = df.transporte, 
+  bbox = NULL,
+  fill_zones = FALSE,
+  draw_perimeter = FALSE
+)
+```
 
-#Grafica
-ggplot() +
-  geom_sf(data = barrios, aes(fill = is_dentro), colour = "grey75", linewidth = 0.25) +
-  geom_sf(data = st_sf(geometry = zonas_unificadas), fill = NA, colour = "grey50", linetype = "dashed") +
-  geom_sf(data = df.transporte, aes(colour = empresa), size = 0.45, show.legend = FALSE) +
-  facet_wrap(~ empresa) +
-  scale_fill_manual(values = c(`TRUE` = "white", `FALSE` = "grey92"), guide = "none") +
-  scale_colour_manual(values = COL_MODO) +
-  coord_sf(xlim = caja[c("xmin", "xmax")], ylim = caja[c("ymin", "ymax")], expand = FALSE) +
-  theme_void() +
-  theme(strip.text = element_text(face = "bold", hjust = 0))
+```{r, fig.width=8, fig.height=2.5}
+plot_mapa_transporte(df.zonas_mapa, zonas_unificadas, df.transporte, caja)
 ```
 
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
