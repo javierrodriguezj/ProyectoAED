@@ -117,6 +117,7 @@ output:
 # Instalación y carga de librerías
 
 ```{r, setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(out.width = "100%")
 #rm(list = ls())
 # Asegurar que pacman esté instalado
 if (!require("pacman")) install.packages("pacman")
@@ -144,9 +145,9 @@ resumen_rapido <- function(df, nombre = "Dataset") {
   geo <- ""
   if (inherits(df, "sf")) {
     crs <- sf::st_crs(df)$input
-    geo <- sprintf(" | 🌍 %s (%s)", sf::st_geometry_type(df, FALSE), if (is.null(crs) || is.na(crs)) "Sin CRS" else crs)
+    geo <- sprintf(" |  %s (%s)", sf::st_geometry_type(df, FALSE), if (is.null(crs) || is.na(crs)) "Sin CRS" else crs)
   }
-  cat(sprintf("\n📊 %s [%d filas × %d col%s]\n", nombre, nrow(df), ncol(df), geo))
+  cat(sprintf("\n %s [%d filas × %d col%s]\n", nombre, nrow(df), ncol(df), geo))
   
   t_map <- c(character = "chr", numeric = "dbl", integer = "int", logical = "lgl", factor = "fct", Date = "date", POSIXct = "dttm")
   
@@ -371,11 +372,18 @@ zonas_unificadas <- st_buffer(
   df.pob %>% filter(tipo==zona_tipo) %>% filter(id %in% zonas_con_valenbisi) %>% st_union(), 
   BUFFER_BORDE
   )
-df.distritos_mapa <- df.pob %>% filter(tipo==zona_tipo) %>% mutate(is_dentro = id %in% zonas_con_valenbisi)
+
+cod_dentro <- df.pob %>%
+  st_drop_geometry() %>%
+  filter(tipo == zona_tipo, id %in% zonas_con_valenbisi) %>%
+  pull(coddistbar)
+
+
+df.barrios_mapa <- df.pob %>% filter(tipo=='barrio') %>% mutate(is_dentro = coddistbar %in% cod_dentro)
 caja <- st_bbox(zonas_unificadas)
 
 ggplot() +
-  geom_sf(data = df.distritos_mapa, aes(fill = is_dentro), colour = "grey75", linewidth = 0.25) +
+  geom_sf(data = df.barrios_mapa, aes(fill = is_dentro), colour = "grey75", linewidth = 0.25) +
   geom_sf(data = st_sf(geometry = zonas_unificadas), fill = NA, colour = "grey50", linetype = "dashed") +
   geom_sf(data = df.transporte, aes(colour = empresa), size = 0.45, show.legend = FALSE) +
   facet_wrap(~ empresa) +
