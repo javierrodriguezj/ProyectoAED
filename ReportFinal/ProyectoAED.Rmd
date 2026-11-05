@@ -384,27 +384,27 @@ g0 <- ggplot(df.pob) +
   theme_minimal() +
   labs(title = "Densidad de población por barrio", fill = "Habitantes/ha")
 
-# g1 <- ggplot(df.transporte %>% filter(empresa == "EMT"))) +
-#   geom_sf(aes(fill = n_emt)) +
-#   scale_fill_gradient(low = "lightblue", high = "darkblue") +
-#   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-#   labs(title = "Paradas de EMT por barrio", fill = "nº paradas")
-# 
-# g2 <- ggplot(datos_transporte_barrio) +
-#   geom_sf(aes(fill = n_metro)) +
-#   scale_fill_gradient(low = "red", high = "darkred") +
-#   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-#   labs(title = "Paradas de Metrovalencia por barrio", fill = "nº paradas")
-# 
-# g3 <- ggplot(datos_transporte_barrio) +
-#   geom_sf(aes(fill = n_valenbisi)) +
-#   scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
-#   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-#   labs(title = "Estaciones de Valenbisi por barrio", fill = "nº estaciones")
-# 
-# 
-# 
-# g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
+g1 <- ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = n_emt)) +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Paradas de EMT por barrio", fill = "nº paradas")
+
+g2 <- ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = n_metro)) +
+  scale_fill_gradient(low = "red", high = "darkred") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Paradas de Metrovalencia por barrio", fill = "nº paradas")
+
+g3 <- ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = n_valenbisi)) +
+  scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Estaciones de Valenbisi por barrio", fill = "nº estaciones")
+
+
+
+g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
 
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
