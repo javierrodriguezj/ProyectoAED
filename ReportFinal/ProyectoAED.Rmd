@@ -139,6 +139,27 @@ BUFFER_BORDE   <- 1000 # Borde del mapa
 
 A continuación descargaremos todos los datasets que hemos utilizado para este proyecto:
 
+```{r}
+resumen_rapido <- function(df, nombre = "Dataset") {
+  geo <- ""
+  if (inherits(df, "sf")) {
+    crs <- sf::st_crs(df)$input
+    geo <- sprintf(" | 🌍 %s (%s)", sf::st_geometry_type(df, FALSE), if (is.null(crs) || is.na(crs)) "Sin CRS" else crs)
+  }
+  cat(sprintf("\n📊 %s [%d filas × %d col%s]\n", nombre, nrow(df), ncol(df), geo))
+  
+  t_map <- c(character = "chr", numeric = "dbl", integer = "int", logical = "lgl", factor = "fct", Date = "date", POSIXct = "dttm")
+  
+  info <- rbind(
+    Tipo   = sapply(df, function(x) { c <- class(x)[1]; if (c %in% names(t_map)) t_map[[c]] else sub("^sfc_", "", c) }),
+    NAs    = colSums(is.na(df)),
+    Unicos = sapply(df, function(x) length(unique(x)))
+  )
+  
+  print(info, quote = FALSE, right = FALSE)
+}
+```
+
 ```{r, message=FALSE, warning=FALSE}
 savedir <- '../data/'
 if (!file.exists(savedir)) dir.create(savedir)
@@ -147,32 +168,41 @@ if (!file.exists(savedir)) dir.create(savedir)
 filepath <- paste0(savedir, 'valenbisi.geojson')
 data <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_rapido(data, "Valenbisi")
 
 # EMT
 filepath <- paste0(savedir, 'emt.geojson')
 data <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_rapido(data, "EMT")
 
 # FGV Paradas
 filepath <- paste0(savedir, 'fgv_paradas.geojson')
 data <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_rapido(data, "FGV")
 
 # Geometría barrios
 filepath <- paste0(savedir, 'geom_barrios.geojson')
 data <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_rapido(data, "Barrios")
 
 # Geometría distritos
 filepath <- paste0(savedir, 'geom_distritos.geojson')
 data <- st_read(dsn = 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_rapido(data, "Distritos")
 
 # Población por barrios
 filepath <- paste0(savedir, 'barrios.zip')
 url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"
 if (!file.exists(filepath)) download.file(url_descarga, destfile = filepath, mode = "wb")
 ```
+
+Los datasets *Valenbisi*, *EMT* y *FGV* tienen muchas columnas que no son relevantes para este estudio. Son aquellas que actualizan datos de las próximas llegadas cada pocos minutos (`open`, `available`, `free`, `updated_at`, `updated_jcd`, `proximas_llegadas`), y datos específicos de cada parada (`name`, `address`, `total`, `ticket`...). La mayoría de estas variables no serán útiles para nuestro estudio, pues nos centramos en datos geográficos y geométricos de las paradas.
+
+Por otro lado, encontramos algunos `NA` en las variables `codvia` y `numportal` de *EMT*. Debido a que son identificativos de cada parada, no son relevantes para el estudio. También encontramos algunos `NA` en las columnas del área de *Barrios* y *Distritos*, lo cual supondrá un problema. Afortunadamente, tenemos la geometría de todas las zonas, por lo que podremos imputar estos valores mediante cálculo directo.
 
 # Conseguir un dataset *tidy*
 
@@ -195,7 +225,8 @@ df.transporte <- bind_rows(
   df.valenbisi %>% transmute(gid=as.integer(gid), empresa="Valenbisi", lineas=as.list((number))),
   df.emt %>% transmute(gid=as.integer(gid), empresa="EMT", lineas=strsplit(lineas, ",")),
   df.fgv_paradas %>% transmute(gid=as.integer(gid), empresa="FGV", lineas=strsplit(linea, ",")),
-) %>% rename(geometria=geometry)
+) %>% rename(geometria=geometry) %>%
+  mutate(empresa=as.factor(empresa))
 head(as_tibble(df.transporte))
 ```
 
@@ -355,6 +386,11 @@ ggplot() +
   theme(strip.text = element_text(face = "bold", hjust = 0))
 ```
 
+```{r}
+# Filtramos las zonas non-gratas
+df.pob <- df.pob %>% filter(tipo==zona_tipo, id %in% zonas_con_valenbisi) %>% st_union()
+```
+
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
 ```{r}
@@ -386,14 +422,45 @@ g3 <- ggplot(datos_transporte_barrio) +
 
 g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
-
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
+
+Preparamos las paradas de cada modo, el dominio de estudio (zonas con al menos una estación Valenbisi) y los barrios que caen dentro de él. Mantenemos todas las paradas de EMT y FGV, también las de fuera del dominio, porque una parada de fuera puede dar servicio a un punto de dentro: si las quitáramos, aparecerían desiertos falsos junto al borde.
+
+```{r}
+# Paradas de cada modo (todas, también las de fuera de València)
+paradas_de <- function(modo) {
+  df.transporte %>%
+    as_tibble() %>%
+    filter(empresa == modo) %>%
+    st_as_sf(sf_column_name = "geometria") %>%
+    select(geometria)
+}
+df.vb_geo  <- paradas_de("Valenbisi")
+df.emt_geo <- paradas_de("EMT")
+df.fgv_geo <- paradas_de("FGV")
+
+# Dominio: unión de las zonas con al menos una estación Valenbisi
+dominio <- df.pob %>%
+  filter(tipo == zona_tipo, id %in% zonas_con_valenbisi) %>%
+  st_union()
+
+# Barrios dentro del dominio (para bordes, etiquetas y asignar barrio a cada hexágono)
+cod_dom <- df.pob %>%
+  st_drop_geometry() %>%
+  filter(tipo == zona_tipo, id %in% zonas_con_valenbisi) %>%
+  pull(coddistbar)
+barrios_dom <- df.pob %>% filter(tipo == "barrio", coddistbar %in% cod_dom)
+```
 
 Justificar el umbral de cercanía:
 
 ```{r}
-min_dist_emt <- as.numeric(apply(mat.dist.emt, 1, min))
-min_dist_fgv <- as.numeric(apply(mat.dist.fgv, 1, min))
+# Para justificar el umbral solo usamos las paradas dentro del dominio
+df.emt_dom <- df.emt_geo %>% st_filter(dominio)
+df.fgv_dom <- df.fgv_geo %>% st_filter(dominio)
+
+min_dist_emt <- st_distance(df.emt_dom, df.vb_geo) %>% apply(1, min) %>% as.numeric()
+min_dist_fgv <- st_distance(df.fgv_dom, df.vb_geo) %>% apply(1, min) %>% as.numeric()
 
 df_distancias <- data.frame(
   Transporte = c(rep("EMT", length(min_dist_emt)), rep("FGV", length(min_dist_fgv))),
@@ -403,37 +470,60 @@ df_distancias <- data.frame(
 ggplot(df_distancias, aes(x = distancia_minima, fill = Transporte)) +
   geom_density(alpha = 0.6) +
   scale_fill_manual(values = c("EMT" = "#c70c30", "FGV" = "#fabd00")) +
-  scale_x_continuous(
-    limits = c(0, 1500), 
-    breaks = seq(0, 1500, by = 250)
-  ) +
-  labs(
-    title = "Distribución de la distancia al Valenbisi más cercano",
-    x = "Distancia (m)",
-    y = "Densidad"
-  ) + 
+  scale_x_continuous(limits = c(0, 1500), breaks = seq(0, 1500, by = 250)) +
+  labs(title = "Distribución de la distancia al Valenbisi más cercano",
+       x = "Distancia (m)", y = "Densidad") +
   theme_minimal()
 
 # Acumulado:
-ggplot(df_distancias, aes(x = Distancia_Minima, color = Transporte)) +
-  stat_ecdf(geom = "step", size = 1) +
-  scale_color_manual(values = c("EMT" = "#E69F00", "FGV" = "#56B4E9")) +
-  geom_vline(xintercept = 300, linetype = "dashed", color = "red", alpha = 0.5) +
-  xlim(0, 1000) +
-  labs(
-    title = "Porcentaje de paradas con Valenbisi a distancia X",
-    subtitle = "La línea roja indica el umbral de 300 metros",
-    x = "Distancia (metros)",
-    y = "Porcentaje Acumulado (0 a 1)"
-  ) +
+ggplot(df_distancias, aes(x = distancia_minima, colour = Transporte)) +
+  stat_ecdf(geom = "step", linewidth = 1) +
+  scale_colour_manual(values = COL_MODO) +
+  geom_vline(xintercept = 250, linetype = "dashed", colour = "grey40") +
+  scale_y_continuous(labels = scales::percent) +
+  coord_cartesian(xlim = c(0, 1000)) +
+  labs(title = "Porcentaje de paradas con Valenbisi a distancia X",
+       subtitle = "La línea discontinua indica el umbral de 250 metros",
+       x = "Distancia (m)", y = "Paradas acumuladas") +
   theme_minimal()
 ```
 
-Javi:
+```{r}
+HEX_M <- 50
+rejilla <- st_make_grid(dominio, cellsize = HEX_M, square = FALSE)
+dentro  <- lengths(st_within(st_centroid(rejilla), dominio)) > 0
+rejilla <- rejilla[dentro]          # solo hexágonos con el centro dentro del dominio
+centros <- st_centroid(rejilla)     # un centro por hexágono, ya filtrados
+```
+
+Ahora calculamos las distancias entre los centros de los hexágonos y cada uno de los medios de transporte.
+
+```{r}
+# Distancia de cada centro a la parada más cercana de cada modo
+dist_vb  <- apply(st_distance(centros, df.vb_geo),  1, min)
+dist_emt <- apply(st_distance(centros, df.emt_geo), 1, min)
+dist_fgv <- apply(st_distance(centros, df.fgv_geo), 1, min)
+
+# Cobertura
+UMBRAL <- c('Valenbisi' = 250, 'EMT' = 250, 'FGV' = 250)
+hex <- st_sf(geometry = rejilla) %>%
+  mutate(V = dist_vb  <= UMBRAL["Valenbisi"],
+         E = dist_emt <= UMBRAL["EMT"],
+         F = dist_fgv <= UMBRAL["FGV"],
+         situacion = case_when(V     ~ "Cubierto por Valenbisi",
+                               E & F ~ "Desierto compensado por EMT y FGV",
+                               E | F ~ "Desierto compensado por un modo",
+                               TRUE  ~ "Desierto sin compensación"))
+
+# Barrio de cada hexágono (según su centro) y los 9 barrios con más desierto
+hex$coddistbar <- st_join(st_sf(geometry = centros), barrios_dom["coddistbar"])$coddistbar
+desierto <- sort(table(hex$coddistbar[!hex$V]), decreasing = TRUE)
+top <- names(desierto)[1:9]
+```
 
 ```{r}
 ggplot() +
-  geom_sf(data = hex%>% group_by(situacion) %>% summarise(), aes(fill = situacion), colour = NA) +
+  geom_sf(data = hex %>% group_by(situacion) %>% summarise(), aes(fill = situacion), colour = NA) +
   geom_sf(data = barrios_dom, fill = NA, colour = "white") +
   geom_sf_text(data = filter(barrios_dom, coddistbar %in% top), aes(label = nombre), size = 2.5) +
   scale_fill_manual(values = c("grey75", "#ee938c", "#e34948", "#9e2324"), name = NULL) +
@@ -441,6 +531,8 @@ ggplot() +
 ```
 
 ```{r}
-colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) #qué cubre cada modo
-hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) #se complementan los medios? NO 
+colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) # qué cubre cada modo
+hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) # ¿se complementan?
+
+sum(desierto[1:9]) / sum(desierto)  # peso de los 9 primeros
 ```
