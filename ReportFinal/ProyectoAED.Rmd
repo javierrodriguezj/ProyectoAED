@@ -367,35 +367,35 @@ head(as_tibble(df.pob))
 Mapas:
 
 ```{r}
-zona_tipo = "distrito"
-# zonas_con_valenbisi <- st_join(
-#   df.transporte %>% as_tibble() %>% filter(empresa=="Valenbisi") %>% st_as_sf(sf_column_name = "geometria"),
-#   df.pob %>% filter(tipo==tipo) %>% select(id)
-# )
-# ZONAS_DOMINIO2 <- sort(unique(zonas_con_valenbisi$id))
+zona_tipo <- "barrio"   # distrito o barrio
+zonas <- df.pob %>%
+  filter(tipo == zona_tipo) %>%
+  mutate(cod = if_else(tipo == "barrio", coddistbar, id)) #zonas y codigo según sean distritos o barrios
 
-zonas_con_valenbisi <- paradas$Valenbisi %>% 
-  st_join(df.pob %>% filter(tipo == zona_tipo) %>% select(id)) %>% 
-  pull(id) %>% 
-  unique() %>% 
-  sort()
+# 1 valenbisi en zonas
+zonas_con_valenbisi <- paradas$Valenbisi %>%
+  st_join(select(zonas, cod)) %>%
+  pull(cod) %>% unique() %>% sort()
 
-zonas_unificadas <- st_buffer(
-  df.pob %>% filter(tipo==zona_tipo) %>% filter(id %in% zonas_con_valenbisi) %>% st_union(), 
-  BUFFER_BORDE
-  )
+# regimen de lo que se grafica
+zonas_dom        <- zonas %>% filter(cod %in% zonas_con_valenbisi)
+dominio          <- st_union(zonas_dom)
+zonas_unificadas <- st_buffer(dominio, BUFFER_BORDE)
+caja             <- st_bbox(zonas_unificadas)
 
-cod_dentro <- df.pob %>%
-  st_drop_geometry() %>%
-  filter(tipo == zona_tipo, id %in% zonas_con_valenbisi) %>%
-  pull(coddistbar)
+# barrios
+barrios     <- df.pob %>%
+  filter(tipo == "barrio") %>%
+  mutate(is_dentro = coddistbar %in% zonas_dom$coddistbar)
+barrios_dom <- barrios %>% filter(is_dentro)
 
-
-df.barrios_mapa <- df.pob %>% filter(tipo=='barrio') %>% mutate(is_dentro = coddistbar %in% cod_dentro)
-caja <- st_bbox(zonas_unificadas)
+#fondo del mapa
+fondo <- zonas %>%
+  mutate(is_dentro = cod %in% zonas_con_valenbisi) %>%
+  distinct(cod, .keep_all = TRUE)
 
 ggplot() +
-  geom_sf(data = df.barrios_mapa, aes(fill = is_dentro), colour = "grey75", linewidth = 0.25) +
+  geom_sf(data = fondo, aes(fill = is_dentro), colour = "grey75", linewidth = 0.25) +
   geom_sf(data = st_sf(geometry = zonas_unificadas), fill = NA, colour = "grey50", linetype = "dashed") +
   geom_sf(data = df.transporte, aes(colour = empresa), size = 0.45, show.legend = FALSE) +
   facet_wrap(~ empresa) +
@@ -404,11 +404,6 @@ ggplot() +
   coord_sf(xlim = caja[c("xmin", "xmax")], ylim = caja[c("ymin", "ymax")], expand = FALSE) +
   theme_void() +
   theme(strip.text = element_text(face = "bold", hjust = 0))
-```
-
-```{r}
-# Filtramos las zonas non-gratas
-#df.pob <- df.pob %>% filter(tipo==zona_tipo, id %in% zonas_con_valenbisi) %>% st_union()
 ```
 
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
@@ -463,19 +458,7 @@ g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 
 Preparamos las paradas de cada modo, el dominio de estudio (zonas con al menos una estación Valenbisi) y los barrios que caen dentro de él. Mantenemos todas las paradas de EMT y FGV, también las de fuera del dominio, porque una parada de fuera puede dar servicio a un punto de dentro: si las quitáramos, aparecerían desiertos falsos junto al borde.
 
-```{r}
-# Dominio: unión de las zonas con al menos una estación Valenbisi
-dominio <- df.pob %>%
-  filter(tipo == zona_tipo, id %in% zonas_con_valenbisi) %>%
-  st_union()
 
-# Barrios dentro del dominio (para bordes, etiquetas y asignar barrio a cada hexágono)
-cod_dom <- df.pob %>%
-  st_drop_geometry() %>%
-  filter(tipo == zona_tipo, id %in% zonas_con_valenbisi) %>%
-  pull(coddistbar)
-barrios_dom <- df.pob %>% filter(tipo == "barrio", coddistbar %in% cod_dom)
-```
 
 Justificar el umbral de cercanía:
 
