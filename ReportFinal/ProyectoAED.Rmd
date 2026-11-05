@@ -130,11 +130,65 @@ invisible(lapply(packages, library, character.only = TRUE))
 
 Constantes
 
-```{r}
+```{r Constantes}
 CRS_M <- 25830 # ETRS89 / UTM 30N (metros) deformacion de La Tierra
 COL_MODO     <- c(Valenbisi = "#2a78d6", EMT = "#E2001A", FGV = "#FCD116")
 BUFFER_BORDE   <- 1000 # Borde del mapa
+UMBRAL <- c('Valenbisi' = 250, 'EMT' = 250, 'FGV' = 250)
+HEX_M <- 50
 ```
+
+```{r Funciones}
+dist_min <- function(origen, destino) {
+  idx <- st_nearest_feature(origen, destino)
+  as.numeric(st_distance(origen, destino[idx, ], by_element = TRUE))
+}
+
+
+extraer_densidad <- function(ruta) {
+  hoja <- read_excel(ruta, sheet = "Padron", col_names = FALSE,
+                     col_types = "list", .name_repair = "minimal")
+  valor <- function(f, c) {
+    if (f > nrow(hoja) || c < 1 || c > ncol(hoja)) return(NA_real_)
+    v <- hoja[[c]][[f]]
+    if (is.null(v) || length(v) == 0) NA_real_ else suppressWarnings(as.numeric(v))
+  }
+  # Nombre del barrio a partir del título (celda A1),
+  # p. ej. "1. Padrón a 01/01/2025 . Barrio 1.1. la Seu"
+  titulo <- as.character(hoja[[1]][[1]])
+  nombre <- sub(".*Barrio\\s+\\d+\\.\\d+\\.\\s*", "", titulo)
+  num <- as.integer(regmatches(basename(ruta), gregexpr("\\d+", basename(ruta)))[[1]])
+  
+  # Buscar la cabecera de densidad
+  pos <- NULL
+  for (c in seq_along(hoja)) {
+    textos <- vapply(hoja[[c]], function(x) if (is.character(x)) x else NA_character_, character(1))
+    f <- which(grepl("^\\s*Densidad de poblaci", textos))
+    if (length(f) > 0) { pos <- c(f[1], c); break }
+  }
+  
+  if (is.null(pos)) {
+    densidad <- personas <- superficie <- NA_real_
+    warning("No se encontró la cabecera de densidad en ", basename(ruta))
+  } else {
+    densidad   <- valor(pos[1] + 1, pos[2])
+    superficie <- valor(pos[1] + 1, pos[2] - 1)
+    personas   <- valor(pos[1] + 1, pos[2] - 2)
+  }
+  
+  data.frame(
+    distrito       = num[1],
+    barrio         = num[2],
+    nombre_barrio  = nombre,
+    personas       = personas,
+    superficie_barrio  = superficie,
+    densidad_barrio = densidad,
+    stringsAsFactors = FALSE
+  )
+}
+```
+
+
 
 # Descarga de los datos (*Raw data*)
 
@@ -235,49 +289,7 @@ head(as_tibble(df.transporte))
 
 El archivo `barrios.zip` contiene varios archivos .xlsx, que son los que realmente contienen los datos que nos interesan. Concretamente, queremos extraer los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. A continuación, extraeremos el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
 
-```{r, Definición de funciones}
-extraer_densidad <- function(ruta) {
-  hoja <- read_excel(ruta, sheet = "Padron", col_names = FALSE,
-                     col_types = "list", .name_repair = "minimal")
-  valor <- function(f, c) {
-    if (f > nrow(hoja) || c < 1 || c > ncol(hoja)) return(NA_real_)
-    v <- hoja[[c]][[f]]
-    if (is.null(v) || length(v) == 0) NA_real_ else suppressWarnings(as.numeric(v))
-  }
-  # Nombre del barrio a partir del título (celda A1),
-  # p. ej. "1. Padrón a 01/01/2025 . Barrio 1.1. la Seu"
-  titulo <- as.character(hoja[[1]][[1]])
-  nombre <- sub(".*Barrio\\s+\\d+\\.\\d+\\.\\s*", "", titulo)
-  num <- as.integer(regmatches(basename(ruta), gregexpr("\\d+", basename(ruta)))[[1]])
-  
-  # Buscar la cabecera de densidad
-  pos <- NULL
-  for (c in seq_along(hoja)) {
-    textos <- vapply(hoja[[c]], function(x) if (is.character(x)) x else NA_character_, character(1))
-    f <- which(grepl("^\\s*Densidad de poblaci", textos))
-    if (length(f) > 0) { pos <- c(f[1], c); break }
-  }
-  
-  if (is.null(pos)) {
-    densidad <- personas <- superficie <- NA_real_
-    warning("No se encontró la cabecera de densidad en ", basename(ruta))
-  } else {
-    densidad   <- valor(pos[1] + 1, pos[2])
-    superficie <- valor(pos[1] + 1, pos[2] - 1)
-    personas   <- valor(pos[1] + 1, pos[2] - 2)
-  }
-  
-  data.frame(
-    distrito       = num[1],
-    barrio         = num[2],
-    nombre_barrio  = nombre,
-    personas       = personas,
-    superficie_barrio  = superficie,
-    densidad_barrio = densidad,
-    stringsAsFactors = FALSE
-  )
-}
-```
+
 
 ```{r}
 # Descomprimimos el .zip y listamos los archivos.
@@ -514,7 +526,6 @@ ggplot(df_distancias, aes(x = distancia_minima, colour = Transporte)) +
 ```
 
 ```{r}
-HEX_M <- 50
 rejilla <- st_make_grid(dominio, cellsize = HEX_M, square = FALSE)
 dentro  <- lengths(st_within(st_centroid(rejilla), dominio)) > 0
 rejilla <- rejilla[dentro]          # solo hexágonos con el centro dentro del dominio
@@ -530,7 +541,7 @@ dist_emt <- apply(st_distance(centros, df.emt_geo), 1, min)
 dist_fgv <- apply(st_distance(centros, df.fgv_geo), 1, min)
 
 # Cobertura
-UMBRAL <- c('Valenbisi' = 250, 'EMT' = 250, 'FGV' = 250)
+
 hex <- st_sf(geometry = rejilla) %>%
   mutate(V = dist_vb  <= UMBRAL["Valenbisi"],
          E = dist_emt <= UMBRAL["EMT"],
