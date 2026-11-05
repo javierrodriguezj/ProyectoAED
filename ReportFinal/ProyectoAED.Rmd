@@ -355,9 +355,6 @@ ggplot() +
   theme(strip.text = element_text(face = "bold", hjust = 0))
 ```
 
-```{}
-```
-
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
 ```{r}
