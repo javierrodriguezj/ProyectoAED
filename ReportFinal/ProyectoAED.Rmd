@@ -195,7 +195,8 @@ df.transporte <- bind_rows(
   df.valenbisi %>% transmute(gid=as.integer(gid), empresa="Valenbisi", lineas=as.list((number))),
   df.emt %>% transmute(gid=as.integer(gid), empresa="EMT", lineas=strsplit(lineas, ",")),
   df.fgv_paradas %>% transmute(gid=as.integer(gid), empresa="FGV", lineas=strsplit(linea, ",")),
-) %>% rename(geometria=geometry)
+) %>% rename(geometria=geometry) %>%
+  mutate(empresa=as.factor(empresa))
 head(as_tibble(df.transporte))
 ```
 
@@ -392,7 +393,7 @@ g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 Justificar el umbral de cercanía:
 
 ```{r}
-min_dist_emt <- as.numeric(apply(mat.dist.emt, 1, min))
+min_dist_emt <- as.numeric(apply(st_distance(df.emt, df.valenbisi), 1, min))
 min_dist_fgv <- as.numeric(apply(mat.dist.fgv, 1, min))
 
 df_distancias <- data.frame(
