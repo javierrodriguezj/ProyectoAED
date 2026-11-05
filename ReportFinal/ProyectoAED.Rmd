@@ -348,28 +348,33 @@ df.pob <- df.geom_barrios %>%
   select(-nombre_barrio) %>%
   rename(nombre_barrio = nombre_barrio_geo, geometria_barrio = all_of(attr(., "sf_column"))) %>%
   left_join(tibble::as_tibble(df.geom_distritos), by = "coddistrit") %>%
+  # Calculamos lo que falta por distrito
   group_by(coddistrit) %>%
-  # Cálculo de la densidad de cada distrito
-  mutate(densidad_distrito = sum(personas, na.rm = TRUE) / sum(superficie_barrio, na.rm = TRUE)) %>%
+  mutate(
+    personas_distrito = sum(personas, na.rm = TRUE)
+    ) %>% 
+  mutate(densidad_distrito = personas_distrito / superficie_distrito) %>%
   ungroup() %>%
-  # Creamos columna de personas por distrito
-  group_by(coddistrit) %>%
-  mutate(personas_distrito = sum(personas, na.rm = TRUE)) %>% ungroup() %>%
   rename(personas_barrio = personas)
 
 
 # Hacemos tidy
 df.pob <- df.pob %>% 
   as_tibble() %>%
-  rename(
-    id_distrito = coddistrit,
-    id_barrio = codbarrio
-  ) %>%
+  select(-coddistrit, -codbarrio) %>%
   pivot_longer(
-    cols = -coddistbar, 
+    cols=-coddistbar,
     names_to = c(".value", "tipo"),
     names_sep = "_"
   ) %>%
+  # Eliminamos los distritos duplicados
+  mutate(coddistbar = if_else(
+    tipo == "distrito",
+    as.integer(coddistbar %/% 10),
+    as.integer(coddistbar)
+  )) %>%
+  distinct() %>%
+  rename(id = coddistbar) %>%
   st_as_sf(sf_column_name = "geometria")
 
 head(as_tibble(df.pob[1:3,]))

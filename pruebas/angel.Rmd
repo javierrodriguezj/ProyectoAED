@@ -370,3 +370,38 @@ plot_heatmap <- function(mat, title) {
 plot_heatmap(mat.dist.fgv, "Distancias: Paradas FGV vs Valenbisi")
 plot_heatmap(mat.dist.emt, "Distancias: Paradas EMT vs Valenbisi")
 ```
+
+# Pruebas con barrios geojson
+
+```{r}
+# Geometría barrios
+filepath <- paste0(savedir, 'geom_barrios.geojson')
+data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_rapido(data, "Barrios")
+
+# Filtrar los barrios que tienen el coddistbar "175"
+data_175 <- data[data$coddistbar == "175", ]
+
+# Crear el mapa
+ggplot() +
+  geom_sf(data = data) +                                      # Geometría de todos los barrios
+  geom_sf(data = data_175, fill = "red") +                    # Pintar los barrios anómalos
+  geom_sf_text(data = data_175, aes(label = nombre))          # Mostrar sus nombres
+
+# Ahora lo mismo pero con distritos
+# Geometría distritos
+filepath <- paste0(savedir, 'geom_distritos.geojson')
+data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_rapido(data, "Distritos")
+
+# Filtrar los barrios que tienen el coddistbar "175"
+data_175 <- data[data$coddistrit == "17", ]
+
+# Crear el mapa
+ggplot() +
+  geom_sf(data = data) +                                      # Geometría de todos los barrios
+  geom_sf(data = data_175, fill = "red") +                    # Pintar los barrios anómalos
+  geom_sf_text(data = data_175, aes(label = nombre))          # Mostrar sus nombres
+```
