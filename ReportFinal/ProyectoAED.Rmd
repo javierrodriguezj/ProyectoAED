@@ -381,7 +381,7 @@ datos_transporte_barrio <- df.geom_barrios %>% left_join(emt_n_barrio, by = "cod
 g0 <- ggplot(df.pob) +
   geom_sf(aes(fill = densidad)) +
   scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
-  theme_minimal() +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Densidad de población por barrio", fill = "Habitantes/ha")
 
 g1 <- ggplot(datos_transporte_barrio) +
