@@ -474,6 +474,8 @@ ggplot(datos_transporte_barrio) +
 
 - [ ] TO DO: CAMBIAR LA ULTIMA FIGURA POR Transporte/Poblacion, a ver que tal.
 
+- [ ] TO DO: Comentar la figura.
+
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
 
 Preparamos las paradas de cada modo, el dominio de estudio (zonas con al menos una estación Valenbisi) y los barrios que caen dentro de él. Mantenemos todas las paradas de EMT y FGV, también las de fuera del dominio, porque una parada de fuera puede dar servicio a un punto de dentro: si las quitáramos, aparecerían desiertos falsos junto al borde.
