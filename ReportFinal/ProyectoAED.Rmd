@@ -447,10 +447,8 @@ Como se puede observar, *Valenbisi* tiene una gran densidad de paradas pero sola
 Debido a la limitada extensión de *Valenbisi*, se centrará el estudio en los barrios que contienen al menos uno de sus estacionamientos.
 
 ```{r, fig.width=8, fig.height=2.5}
-zonas_unificadas <- st_buffer(
-  df.pob %>% filter(tipo==zona_tipo) %>% filter(id %in% zonas_con_valenbisi) %>% st_union(), 
-  BUFFER_BORDE
-)
+dominio <- df.pob %>% filter(tipo==zona_tipo) %>% filter(id %in% zonas_con_valenbisi) %>% st_union()
+zonas_unificadas <- st_buffer(dominio, BUFFER_BORDE)
 caja <- st_bbox(zonas_unificadas)
 plot_mapa_transporte(df.zonas_mapa, zonas_unificadas, df.transporte, caja)
 ```
@@ -603,7 +601,7 @@ hex <- st_sf(geometry = rejilla) %>%
                                TRUE  ~ "Desierto sin compensación"))
 
 # Barrio de cada hexágono (según su centro) y los 9 barrios con más desierto
-hex$coddistbar <- st_join(st_sf(geometry = centros), barrios_dom["coddistbar"])$coddistbar
+hex$coddistbar <- st_join(st_sf(geometry = centros), df.pob["id"])$coddistbar
 desierto <- sort(table(hex$coddistbar[!hex$V]), decreasing = TRUE)
 top <- names(desierto)[1:9]
 ```
@@ -611,8 +609,8 @@ top <- names(desierto)[1:9]
 ```{r}
 ggplot() +
   geom_sf(data = hex %>% group_by(situacion) %>% summarise(), aes(fill = situacion), colour = NA) +
-  geom_sf(data = barrios_dom, fill = NA, colour = "white") +
-  geom_sf_text(data = filter(barrios_dom, coddistbar %in% top), aes(label = nombre), size = 2.5) +
+  geom_sf(data = df.pob, fill = NA, colour = "white") +
+  geom_sf_text(data = filter(df.pob, coddistbar %in% top), aes(label = nombre), size = 2.5) +
   scale_fill_manual(values = c("grey75", "#ee938c", "#e34948", "#9e2324"), name = NULL) +
   theme_void()
 ```
