@@ -141,18 +141,18 @@ leer_excels <- function(ruta) {
     densidad <- personas <- superficie <- NA_real_
     warning("No se encontró la cabecera de densidad en ", basename(ruta))
   } else {
-    densidad   <- valor(pos[1] + 1, pos[2])
-    superficie <- valor(pos[1] + 1, pos[2] - 1)
+    #densidad   <- valor(pos[1] + 1, pos[2])
+    #superficie <- valor(pos[1] + 1, pos[2] - 1)
     personas   <- valor(pos[1] + 1, pos[2] - 2)
   }
   
   data.frame(
-    distrito       = num[1],
-    barrio         = num[2],
+    coddistrit       = num[1],
+    codbar         = num[2],
     nombre_barrio  = nombre,
     personas       = personas,
-    superficie_barrio  = superficie,
-    densidad_barrio = densidad,
+    #superficie_barrio  = superficie,
+    #densidad_barrio = densidad,
     stringsAsFactors = FALSE
   )
 }
@@ -299,61 +299,53 @@ unzip(filepath, exdir = folder)
 archivos <- list.files(folder, pattern = "^Distrito_\\d+_Barrio_\\d+\\.xlsx$", full.names = TRUE)
 
 # Leemos los archivos
-df.pob <- do.call(rbind, lapply(archivos, leer_excels))
-df.pob <- df.pob[order(df.pob$distrito, df.pob$barrio), ]
-rownames(df.pob) <- NULL
+df.info_excels <- do.call(rbind, lapply(archivos, leer_excels)) %>% arrange(coddistrit, codbar)
+rownames(df.info_excels) <- NULL
 
-zona_tipo = "barrio" # "barrio" o "distritos"
+zona_tipo <- "barrio" # Elegir entre "barrio" o "distritos"
+unidades <- "ha" # Elegir unidades (ver unidades_lista)
+unidades_lista <- list(m2=1, ha=1e-4, km2=1e-6)
+unidades_factor <- as.numeric(unidades_lista[unidades])
 
-# Añadimos la geometría de los barrios y distritos.
-# Creamos dataframe de distritos
-df.geom_distritos <- df.geom_distritos %>%
-  st_make_valid() %>%
-  mutate(coddistrit = as.integer(coddistrit)) %>%
-  group_by(coddistrit) %>%
-  summarise(nombre_distrito = first(nombre), .groups = "drop") %>%
-  # Calculamos las áreas a mano porque en el dataset hay NA's.
-  mutate(superficie_distrito = as.numeric(st_area(geometry)) / 1e6) %>% # km²
-  rename(geometria_distrito = all_of(attr(df.geom_distritos, "sf_column")))
+# Creamos un dataframe con toda la info de los barrios
+df.pob_barrios <- df.geom_barrios %>% mutate(
+  id = as.integer(coddistbar),
+  superficie = as.numeric(st_area(geometry)) * unidades_factor
+) %>% rename(geometria = geometry) %>% select(id, nombre, superficie, geometria) %>%
+  left_join(df.info_excels %>% mutate(
+      id=as.integer(paste0(coddistrit, codbar))), 
+      by="id"
+    ) %>%
+  # Unimos los poligonos inconexos en una misma fila
+  group_by(id) %>%
+  summarise(
+    nombre     = paste(nombre, collapse = "-"),
+    personas   = first(personas), # En los excel aparce ya el total.
+    superficie = sum(superficie, na.rm = TRUE),
+    densidad   = personas/superficie
+  )
 
-# Lo juntamos a df.pob
-df.pob <- df.geom_barrios %>%
-  st_make_valid() %>%
-  mutate(across(c(coddistrit, codbarrio, coddistbar), as.integer)) %>%
-  select(coddistrit, codbarrio, coddistbar, nombre_barrio_geo = nombre) %>%
-  right_join(st_drop_geometry(df.pob), by = c("coddistrit" = "distrito", "codbarrio" = "barrio")) %>%
-  select(-nombre_barrio) %>%
-  rename(nombre_barrio = nombre_barrio_geo, geometria_barrio = all_of(attr(., "sf_column"))) %>%
-  left_join(tibble::as_tibble(df.geom_distritos), by = "coddistrit") %>%
-  # Calculamos lo que falta por distrito
-  group_by(coddistrit) %>%
-  mutate(
-    personas_distrito = sum(personas, na.rm = TRUE)
-    ) %>% 
-  mutate(densidad_distrito = personas_distrito / superficie_distrito) %>%
-  ungroup() %>%
-  rename(personas_barrio = personas)
+# OPCIONAL: en caso de querer los distritos, los calculamos también.
+df.pob_distritos <- df.geom_distritos %>% mutate(
+  id = as.integer(coddistrit),
+  superficie = as.numeric(st_area(geometry)) * unidades_factor
+) %>% rename(geometria = geometry) %>% select(id, nombre, geometria) %>%
+  # Añadimos la cantidad de personas de cada distrito
+  left_join(
+    df.info_excels %>% group_by(coddistrit) %>% summarise(personas=sum(personas, na.rm=TRUE)) %>% rename(id=coddistrit), 
+    by="id") %>%
+  # Unimos los poligonos inconexos en una misma fila
+  group_by(id) %>%
+  summarise(
+    nombre     = first(nombre),
+    personas   = first(personas), # En los excel aparce ya el total.
+  ) %>% mutate(
+    superficie = as.numeric(st_area(geometria)) * unidades_factor,
+    densidad = personas/superficie
+    )
 
-
-# Hacemos tidy
-df.pob <- df.pob %>% 
-  as_tibble() %>%
-  select(-coddistrit, -codbarrio) %>%
-  pivot_longer(
-    cols=-coddistbar,
-    names_to = c(".value", "tipo"),
-    names_sep = "_"
-  ) %>%
-  # Eliminamos los distritos duplicados
-  mutate(coddistbar = if_else(
-    tipo == "distrito",
-    as.integer(coddistbar %/% 10),
-    as.integer(coddistbar)
-  ),
-  tipo = as.factor(tipo)) %>%
-  distinct() %>%
-  rename(id = coddistbar) %>%
-  st_as_sf(sf_column_name = "geometria")
+# Elegimos la tabla que nos interesa
+df.pob <- if (zona_tipo=="barrio") df.pob_barrios else df.pob_distritos
 
 head(as_tibble(df.pob[1:3,]))
 ```
@@ -365,18 +357,16 @@ head(as_tibble(df.pob[1:3,]))
 En primer lugar se dibujará en el mapa todas las paradas de transporte público.
 
 ```{r}
-
-
 zonas_con_valenbisi <- df.transporte %>% 
   as_tibble() %>% 
   filter(empresa == "Valenbisi") %>% 
   st_as_sf(sf_column_name = "geometria") %>% 
-  st_join(df.pob %>% filter(tipo == zona_tipo) %>% select(id)) %>% 
+  st_join(df.pob %>% select(id)) %>% 
   pull(id) %>% 
   unique() %>% 
   sort()
 
-df.zonas_mapa <- df.pob %>% filter(tipo==zona_tipo) %>% mutate(is_dentro = id %in% zonas_con_valenbisi)
+df.zonas_mapa <- df.pob %>% mutate(is_dentro = id %in% zonas_con_valenbisi)
 
 plot_mapa_transporte(
   df_distritos = df.zonas_mapa, 
@@ -392,16 +382,18 @@ Como se puede observar, *Valenbisi* tiene una gran densidad de paradas pero sola
 Debido a la limitada extensión de *Valenbisi*, se centrará el estudio en los barrios que contienen al menos uno de sus estacionamientos.
 
 ```{r, fig.width=8, fig.height=2.5}
-dominio <- df.pob %>% filter(tipo==zona_tipo) %>% filter(id %in% zonas_con_valenbisi) %>% st_union()
+dominio <- df.pob %>% filter(id %in% zonas_con_valenbisi) %>% st_union()
 zonas_unificadas <- st_buffer(dominio, BUFFER_BORDE)
 caja <- st_bbox(zonas_unificadas)
 plot_mapa_transporte(df.zonas_mapa, zonas_unificadas, df.transporte, caja)
 ```
 
-A continuación, eliminaremos las zonas zombreadas del dataset ya que no contienen ninguna parada de *Valenbisi*.
+A continuación, eliminaremos las zonas zombreadas del dataset ya que no contienen ninguna parada de *Valenbisi*. Por otro lado, hay un pequeño barrio en el centro urbano que no tiene paradas: el barrio "El Pilar". Crearemos otra variable con este barrio porque, al ser céntrico, sí que nos interesa para otros análisis.
 
 ```{r}
-df.pob <- df.pob %>% filter((tipo == zona_tipo) & id %in% zonas_con_valenbisi) %>% mutate(coddistbar = sprintf("%03d", as.integer(id)))
+df.pob_con_bicis <- df.pob %>% filter(id %in% zonas_con_valenbisi)# %>% mutate(coddistbar = sprintf("%03d", as.integer(id)))
+
+df.pob <- df.pob_con_bicis %>% bind_rows(df.pob %>% filter(nombre == "EL PILAR"))
 ```
 
 - [ ] TO DO: Explicar qué es el perímetro `BUFFER_BORDE`. Justificarlo con la gráfica de Ángel?
@@ -416,15 +408,15 @@ Para ello, se va a crear un DataFrame (datos_transporte_barrio) en el que cada f
 
 ```{r}
 # EMT: asignar cada parada al barrio donde cae
-emt_n_barrio <- st_join(df.emt, df.pob) %>% st_drop_geometry() %>% filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_emt")
+emt_n_barrio <- st_join(df.emt, df.pob) %>% st_drop_geometry() %>% filter(!is.na(id)) %>% count(id, name = "n_emt")
 
 metro_n_barrio <- st_join(df.fgv_paradas, df.pob) %>% st_drop_geometry() %>%
-  filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_metro")
+  filter(!is.na(id)) %>% count(id, name = "n_metro")
 
-valenbisi_n_barrio <- st_join(df.valenbisi, df.pob) %>% st_drop_geometry() %>% filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_valenbisi")
+valenbisi_n_barrio <- st_join(df.valenbisi, df.pob) %>% st_drop_geometry() %>% filter(!is.na(id)) %>% count(id, name = "n_valenbisi")
 
 # unimos para cada barrio
-datos_transporte_barrio <- df.pob %>% left_join(emt_n_barrio, by = "coddistbar") %>% left_join(metro_n_barrio, by = "coddistbar") %>% left_join(valenbisi_n_barrio, by = "coddistbar") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
+datos_transporte_barrio <- df.pob_con_bicis %>% left_join(emt_n_barrio, by = "id") %>% left_join(metro_n_barrio, by = "id") %>% left_join(valenbisi_n_barrio, by = "id") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
 ```
 
 ```{r}
@@ -555,7 +547,7 @@ top <- names(desierto)[1:9]
 ggplot() +
   geom_sf(data = hex %>% group_by(situacion) %>% summarise(), aes(fill = situacion), colour = NA) +
   geom_sf(data = df.pob, fill = NA, colour = "white") +
-  geom_sf_text(data = filter(df.pob, coddistbar %in% top), aes(label = nombre), size = 2.5) +
+  geom_sf_text(data = filter(df.pob, id %in% top), aes(label = nombre), size = 2.5) +
   scale_fill_manual(values = c("grey75", "#ee938c", "#e34948", "#9e2324"), name = NULL) +
   theme_void()
 ```
