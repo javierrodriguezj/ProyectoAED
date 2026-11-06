@@ -423,7 +423,7 @@ g0 <- ggplot(df.pob) +
   geom_sf(aes(fill = densidad)) +
   scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-  labs(title = "Densidad de población por barrio", fill = "Habitantes/km^2")
+  labs(title = "Densidad de población por barrio", fill = "Habitantes/km²")
 
 g1 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_emt)) +
@@ -447,29 +447,33 @@ g3 <- ggplot(datos_transporte_barrio) +
 g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
 
-- [ ] TO DO: COMENTAR ESTA FIGURA
+- [ ] TO DO: COMENTAR LA FIGURA ANTERIOR
 
-```{r}
+```{r, fig.width=8, fig.height=2.5}
 
 datos_transporte_barrio <- datos_transporte_barrio %>% mutate(transporte_total = n_emt + n_metro + n_valenbisi, ratio_transporte_densidad = ifelse(densidad > 0, transporte_total / densidad, NA))
 
-cor(datos_transporte_barrio$densidad,
+correlacion <- cor(datos_transporte_barrio$densidad,
     datos_transporte_barrio$transporte_total,
     use = "complete.obs")
 
-ggplot(datos_transporte_barrio) +
+cat("Hay una correlación del", round(correlacion, 2), "entre el número de paradas totales y la densidad de población")
+
+g1 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = transporte_total)) +
   scale_fill_gradient(low = "white", high = "blue") +
   theme_minimal() +
   theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
   labs(title = "Transporte total por barrio", fill = "Transporte")
 
-ggplot(datos_transporte_barrio) +
+g2 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = ratio_transporte_densidad)) +
   scale_fill_gradient(low = "white", high = "blue") +
   theme_minimal() +
   theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
   labs(title = "Oferta de transporte respecto a la densidad de población", fill = "Transporte/densidad")
+
+g0 + g1 + plot_layout(ncol = 2)
 ```
 
 - [ ] TO DO: CAMBIAR LA ULTIMA FIGURA POR Transporte/Poblacion, a ver que tal.
