@@ -514,7 +514,8 @@ g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
 
 ```{r}
-datos_transporte_barrio <- datos_transporte_barrio %>% mutate(coddistbar = as.integer(coddistbar)) %>% left_join(df.pob %>% filter(tipo == "barrio") %>% st_drop_geometry() %>% select(coddistbar, personas, superficie, densidad), by = "coddistbar") %>% mutate(transporte_total = n_emt + n_metro + n_valenbisi, ratio_transporte_densidad = ifelse(densidad > 0, transporte_total / densidad, NA))
+
+datos_transporte_barrio <- datos_transporte_barrio %>% mutate(transporte_total = n_emt + n_metro + n_valenbisi, ratio_transporte_densidad = ifelse(densidad > 0, transporte_total / densidad, NA))
 
 datos_transporte_barrio %>%
   st_drop_geometry() %>%
