@@ -53,6 +53,8 @@ endnotes: false
 output: 
   rticles::mdpi_article:
     extra_dependencies: longtable
+    includes:
+      in_header: preamble.tex
 ---
 
 # Introducción
@@ -72,7 +74,7 @@ HEX_M <- 50
 # Instalación y carga de librerías
 
 ```{r, setup, message=FALSE, warning=FALSE}
-knitr::opts_chunk$set(out.width = "100%")
+knitr::opts_chunk$set(out.width = "90%")
 #rm(list = ls())
 # Asegurar que pacman esté instalado
 if (!require("pacman")) install.packages("pacman")
