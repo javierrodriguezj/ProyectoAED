@@ -460,6 +460,8 @@ plot_mapa_transporte(df.zonas_mapa, zonas_unificadas, df.transporte, caja)
 
 La población de Valencia no se distribuye de manera uniforme entre sus distritos, y de la misma forma, las redes de transporte público pueden presentar diferencias en su disponibilidad según la zona. Por ello, se plantea analizar si los distritos con mayor número de habitantes son también aquellos que disponen de una mayor oferta de transporte público, o si existen zonas donde ambas distribuciones no coinciden. Para ello, se estudiará la relación entre la población y la cantidad de paradas o estaciones de EMT, Metrovalencia y ValenBisi.
 
+- [ ] ¿NECESARIO el párrafo siguiente?:
+
 Para ello, se va a crear un DataFrame (datos_transporte_barrio) en el que cada fila corresponda a un barrio de Valencia y contenga la densidad de población junto con el número de paradas o estaciones disponibles de cada medio de transporte público. Sin embargo, como los datasets de los transportes únicamente proporcionan la localización geográfica de sus estaciones o paradas, será necesario asociar cada punto al barrio correspondiente y posteriormente contabilizar el número de estaciones existentes en cada zona. Finalmente, toda esta información se unirá en una única tabla que permitirá analizar la relación entre densidad de población y oferta de transporte público.
 
 ```{r}
