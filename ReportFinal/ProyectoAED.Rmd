@@ -64,6 +64,7 @@ Este proyecto consiste en el estudio de la distribución de las paradas de *Vale
 Se definen a continuación algunas constantes que serán útiles a lo largo del documento.
 
 ```{r}
+rm(list = ls())
 CRS_M <- 25830 # ETRS89 / UTM 30N (metros) deformacion de La Tierra
 COL_MODO     <- c(Valenbisi = "#2a78d6", EMT = "#E2001A", FGV = "#FCD116")
 BUFFER_BORDE   <- 1000 # Borde del mapa
@@ -75,7 +76,6 @@ HEX_M <- 50
 
 ```{r, setup, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(out.width = "90%")
-#rm(list = ls())
 # Asegurar que pacman esté instalado
 if (!require("pacman")) install.packages("pacman")
 
@@ -303,7 +303,7 @@ df.pob <- do.call(rbind, lapply(archivos, leer_excels))
 df.pob <- df.pob[order(df.pob$distrito, df.pob$barrio), ]
 rownames(df.pob) <- NULL
 
-zona_tipo = "barrio"
+zona_tipo = "barrio" # "barrio" o "distritos"
 
 # Añadimos la geometría de los barrios y distritos.
 # Creamos dataframe de distritos
