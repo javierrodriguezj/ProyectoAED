@@ -263,7 +263,7 @@ Los datasets *Valenbisi*, *EMT* y *FGV* tienen muchas columnas que no son releva
 
 Por otro lado, encontramos algunos `NA` en las variables `codvia` y `numportal` de *EMT*. Debido a que son identificativos de cada parada, no son relevantes para el estudio. También encontramos algunos `NA` en las columnas del área de *Barrios* y *Distritos*, lo cual supondrá un problema. Afortunadamente, tenemos la geometría de todas las zonas, por lo que podremos imputar estos valores mediante cálculo directo.
 
-Finalmente, es curioso ver que *Barrios* tiene un elemento duplicado de la variable `coddistbar`, cuando este debería ser un identificador único de cada barrio. Esto se debe a que las entradas "MAHUELLA-TAULADELLA" y "RAFALELL-VISTABELLA" son en realidad en mismo barrio, pero aparecen en filas distintas probablemente porque están separadas geográficamente. Esto se tendrá que tener en cuenta.
+Finalmente, es curioso ver que *Barrios* tiene un elemento duplicado de la variable `coddistbar`, cuando este debería ser un identificador único de cada barrio. Esto se debe a que las entradas "MAHUELLA-TAULADELLA" y "RAFALELL-VISTABELLA" son en realidad el mismo barrio, pero aparecen en filas distintas probablemente porque están separadas geográficamente. Esto se tendrá que tener en cuenta.
 
 # Conseguir un dataset *tidy*
 
