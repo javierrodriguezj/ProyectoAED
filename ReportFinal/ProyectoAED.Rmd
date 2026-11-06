@@ -473,15 +473,15 @@ Para ello, se va a crear un DataFrame (datos_transporte_barrio) en el que cada f
 
 ```{r}
 # EMT: asignar cada parada al barrio donde cae
-emt_n_barrio <- st_join(df.emt, df.geom_barrios) %>% st_drop_geometry() %>% filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_emt")
+emt_n_barrio <- st_join(df.emt, df.pob) %>% st_drop_geometry() %>% filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_emt")
 
-metro_n_barrio <- st_join(df.fgv_paradas, df.geom_barrios) %>% st_drop_geometry() %>%
+metro_n_barrio <- st_join(df.fgv_paradas, df.pob) %>% st_drop_geometry() %>%
   filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_metro")
 
-valenbisi_n_barrio <- st_join(df.valenbisi, df.geom_barrios) %>% st_drop_geometry() %>% filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_valenbisi")
+valenbisi_n_barrio <- st_join(df.valenbisi, df.pob) %>% st_drop_geometry() %>% filter(!is.na(coddistbar)) %>% count(coddistbar, name = "n_valenbisi")
 
 # unimos para cada barrio
-datos_transporte_barrio <- df.geom_barrios %>% left_join(emt_n_barrio, by = "coddistbar") %>% left_join(metro_n_barrio, by = "coddistbar") %>% left_join(valenbisi_n_barrio, by = "coddistbar") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
+datos_transporte_barrio <- df.pob %>% left_join(emt_n_barrio, by = "coddistbar") %>% left_join(metro_n_barrio, by = "coddistbar") %>% left_join(valenbisi_n_barrio, by = "coddistbar") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
 ```
 
 ```{r}
