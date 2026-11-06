@@ -544,6 +544,7 @@ Justificar el umbral de cercanía:
 
 ```{r}
 # Para justificar el umbral solo usamos las paradas dentro del dominio
+paradas <- split(df.transporte, df.transporte$empresa)
 df.emt_dom <- paradas$EMT %>% st_filter(dominio)
 df.fgv_dom <- paradas$FGV %>% st_filter(dominio)
 
