@@ -478,28 +478,25 @@ datos_transporte_barrio <- df.geom_barrios %>% left_join(emt_n_barrio, by = "cod
 ```
 
 ```{r}
-dom_barrio_parada <- datos_transporte_barrio %>%
-  filter(as.integer(coddistbar) %in% barrios_dom$coddistbar)
-
-g0 <- ggplot(barrios_dom) +
+g0 <- ggplot(df.pob) +
   geom_sf(aes(fill = densidad)) +
   scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Densidad de población por barrio", fill = "Habitantes/km^2")
 
-g1 <- ggplot(dom_barrio_parada) +
+g1 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_emt)) +
   scale_fill_gradient(low = "lightblue", high = "darkblue") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Paradas de EMT por barrio", fill = "nº paradas")
 
-g2 <- ggplot(dom_barrio_parada) +
+g2 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_metro)) +
   scale_fill_gradient(low = "red", high = "darkred") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   labs(title = "Paradas de Metrovalencia por barrio", fill = "nº paradas")
 
-g3 <- ggplot(dom_barrio_parada) +
+g3 <- ggplot(datos_transporte_barrio) +
   geom_sf(aes(fill = n_valenbisi)) +
   scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
   theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
