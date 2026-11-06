@@ -118,7 +118,7 @@ output:
 
 Este proyecto consiste en el estudio de la distribución de las paradas de *Valenbisi* y su relación con el resto de transportes públicos (*EMT* y *FGV*). Para ello, hemos utilizado una base de datos proporcionada por el Ayuntamiento de Valencia, de libre acceso, con datos sobre el transporte público, los barrios y distritos de Valencia y sus habitantes.
 
-Definimos a continuación algunas constantes que nos serán útiles a lo largo del documento.
+Se definen a continuación algunas constantes que serán útiles a lo largo del documento.
 
 ```{r}
 CRS_M <- 25830 # ETRS89 / UTM 30N (metros) deformacion de La Tierra
@@ -142,7 +142,7 @@ pacman::p_load(char=packages)
 invisible(lapply(packages, library, character.only = TRUE))
 ```
 
-También definimos a continuación algunas funciones que usaremos a lo largo del documento.
+También se definen a continuación algunas funciones que se usarán a lo largo del documento.
 
 ```{r Funciones}
 # Para imprimir info básica sobre un dataframe
@@ -213,11 +213,42 @@ leer_excels <- function(ruta) {
     stringsAsFactors = FALSE
   )
 }
+
+# Plotear las paradas de transporte público en el mapa de Valencia
+plot_mapa_transporte <- function(df_distritos, zonas_unif = NULL, df_transp, bbox = NULL, colores = COL_MODO, fill_zones = TRUE, draw_perimeter = TRUE) {
+  
+  p <- ggplot()
+  if (fill_zones) {
+    p <- p + 
+      geom_sf(data = df_distritos, aes(fill = is_dentro), colour = "grey75", linewidth = 0.25) +
+      scale_fill_manual(values = c(`TRUE` = "white", `FALSE` = "grey92"), guide = "none")
+  } else {
+    p <- p + geom_sf(data = df_distritos, fill = "white", colour = "grey75", linewidth = 0.25)
+  }
+  if (draw_perimeter && !is.null(zonas_unif)) {
+    p <- p + 
+      geom_sf(data = st_sf(geometry = zonas_unif), fill = NA, colour = "grey50", linetype = "dashed")
+  }
+  p <- p + 
+    geom_sf(data = df_transp, aes(colour = empresa), size = 0.45, show.legend = FALSE) +
+    facet_wrap(~ empresa) +
+    scale_colour_manual(values = colores) +
+    theme_void() +
+    theme(strip.text = element_text(face = "bold", hjust = 0))
+  if (!is.null(bbox)) {
+    p <- p + coord_sf(xlim = bbox[c("xmin", "xmax")], 
+                      ylim = bbox[c("ymin", "ymax")], 
+                      expand = TRUE)
+  } else {
+    p <- p + coord_sf(expand = TRUE)
+  }
+  return(p)
+}
 ```
 
 # Descarga de los datos (*Raw data*)
 
-A continuación descargaremos todos los datos desde la web del Ayuntamiento de Valencia. Como la mayoría son archivos `.geojson`, el paquete `sf` nos será de gran ayuda para trabajar con geometrías.
+A continuación se descargarán todos los datos desde la web del Ayuntamiento de Valencia. Como la mayoría son archivos `.geojson`, el paquete `sf` será de gran ayuda para trabajar con geometrías.
 
 ```{r}
 savedir <- '../data/'
@@ -259,9 +290,9 @@ url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.z
 if (!file.exists(filepath)) download.file(url_descarga, destfile = filepath, mode = "wb")
 ```
 
-Los datasets *Valenbisi*, *EMT* y *FGV* tienen muchas columnas que no son relevantes para este estudio. Son aquellas que actualizan datos de las próximas llegadas cada pocos minutos (`open`, `available`, `free`, `updated_at`, `updated_jcd`, `proximas_llegadas`), y datos específicos de cada parada (`name`, `address`, `total`, `ticket`...). La mayoría de estas variables no serán útiles para nuestro estudio, pues nos centramos en datos geográficos y geométricos de las paradas.
+Los datasets *Valenbisi*, *EMT* y *FGV* tienen muchas columnas que no son relevantes para este estudio. Son aquellas que actualizan datos de las próximas llegadas cada pocos minutos (`open`, `available`, `free`, `updated_at`, `updated_jcd`, `proximas_llegadas`), y datos específicos de cada parada (`name`, `address`, `total`, `ticket`...). La mayoría de estas variables no serán útiles, pues el interés principal son los datos geográficos y geométricos de las paradas.
 
-Por otro lado, encontramos algunos `NA` en las variables `codvia` y `numportal` de *EMT*. Debido a que son identificativos de cada parada, no son relevantes para el estudio. También encontramos algunos `NA` en las columnas del área de *Barrios* y *Distritos*, lo cual supondrá un problema. Afortunadamente, tenemos la geometría de todas las zonas, por lo que podremos imputar estos valores mediante cálculo directo.
+Por otro lado, existen algunos `NA` en las variables `codvia` y `numportal` de *EMT*. Debido a que son identificativos de cada parada, no son relevantes para el estudio. También hay algunos `NA` en las columnas del área de *Barrios* y *Distritos*, lo cual supondrá un problema. Afortunadamente, se encuentra la geometría de todas las zonas, por lo que se podrá imputar estos valores mediante cálculo directo.
 
 Finalmente, es curioso ver que *Barrios* tiene un elemento duplicado de la variable `coddistbar`, cuando este debería ser un identificador único de cada barrio. Esto se debe a que las entradas "MAHUELLA-TAULADELLA" y "RAFALELL-VISTABELLA" son en realidad el mismo barrio, pero aparecen en filas distintas probablemente porque están separadas geográficamente. Esto se tendrá que tener en cuenta.
 
@@ -269,7 +300,7 @@ Finalmente, es curioso ver que *Barrios* tiene un elemento duplicado de la varia
 
 ## Datos de transporte público
 
-En primer lugar, agruparemos todos los datos de transporte públio en un único dataframe *tidy*.
+En primer lugar, se agruparán todos los datos de transporte públio en un único dataframe *tidy*.
 
 ```{r}
 # Cargamos los datos que hemos guardado previamente.
@@ -279,7 +310,7 @@ df.emt          <- st_read(paste0(savedir, 'emt.geojson'), quiet = T) %>% st_tra
 df.fgv_paradas  <- st_read(paste0(savedir, 'fgv_paradas.geojson'), quiet = T) %>% st_transform(CRS_M)
 ```
 
-Estos dataframes tienen columnas que no vamos a necesitar para nuestro análisis, por lo que formaremos nuestro *tidy* dataset únicamente con las variables que nos vayan a ser útiles (variables "decorativas" como los nombres de las paradas no resultan relevantes para este estudio). En concreto, nos interesa su ubicación o su *geometría*.
+Estos dataframes tienen columnas que no vamos a necesitar para nuestro análisis, por lo que formaremos nuestro *tidy* dataset únicamente con las variables que vayan a ser útiles para el estudio (variables "decorativas" como los nombres de las paradas no resultan relevantes para este estudio). En concreto, interesan su ubicación o su *geometría*.
 
 ```{r}
 df.transporte <- bind_rows(
@@ -289,7 +320,6 @@ df.transporte <- bind_rows(
 ) %>% rename(geometria=geometry) %>%
   mutate(empresa=as.factor(empresa))
 str(df.transporte[1:2,])
-
 ```
 
 `df.transporte` engloba la ubicación, el identificador y las líneas que pasan por cada parada de *Valenbisi*, *EMT* y *FGV*.
@@ -316,7 +346,7 @@ df.geom_barrios <- df.geom_barrios %>%
 cat("Ahora ya hay", length(unique(df.geom_barrios$coddistbar)), "coddistbar únicos, y", nrow(df.geom_barrios), "filas en el dataframe.")
 ```
 
-El archivo `barrios.zip` contiene varios archivos .xlsx, que son los que realmente contienen los datos que nos interesan. Concretamente, se extraerán los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. Cabe observar que solo hay un archivo `.xlsx` correspondiente al barrio 17.5, que es la entrada duplicada mencionada anteriormente, lo cual refuerza la idea de que ambos son el mismo barrio. A continuación, se extraerá el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
+El archivo `barrios.zip` contiene varios archivos `.xlsx`, que son los que realmente contienen los datos que nos interesan. Concretamente, se extraerán los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. Cabe observar que solo hay un archivo `.xlsx` correspondiente al barrio 17.5, que es la entrada duplicada mencionada anteriormente, lo cual refuerza la idea de que ambos son el mismo barrio. A continuación, se extraerá el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
 
 ```{r}
 # Descomprimimos el .zip y listamos los archivos.
@@ -386,40 +416,7 @@ head(as_tibble(df.pob[1:3,]))
 
 ## Transportes
 
-En primer lugar dibujaremos en el mapa todas las paradas de transporte público.
-
-```{r}
-# Definimos una función para plotear
-plot_mapa_transporte <- function(df_distritos, zonas_unif = NULL, df_transp, bbox = NULL, colores = COL_MODO, fill_zones = TRUE, draw_perimeter = TRUE) {
-  
-  p <- ggplot()
-  if (fill_zones) {
-    p <- p + 
-      geom_sf(data = df_distritos, aes(fill = is_dentro), colour = "grey75", linewidth = 0.25) +
-      scale_fill_manual(values = c(`TRUE` = "white", `FALSE` = "grey92"), guide = "none")
-  } else {
-    p <- p + geom_sf(data = df_distritos, fill = "white", colour = "grey75", linewidth = 0.25)
-  }
-  if (draw_perimeter && !is.null(zonas_unif)) {
-    p <- p + 
-      geom_sf(data = st_sf(geometry = zonas_unif), fill = NA, colour = "grey50", linetype = "dashed")
-  }
-  p <- p + 
-    geom_sf(data = df_transp, aes(colour = empresa), size = 0.45, show.legend = FALSE) +
-    facet_wrap(~ empresa) +
-    scale_colour_manual(values = colores) +
-    theme_void() +
-    theme(strip.text = element_text(face = "bold", hjust = 0))
-  if (!is.null(bbox)) {
-    p <- p + coord_sf(xlim = bbox[c("xmin", "xmax")], 
-                      ylim = bbox[c("ymin", "ymax")], 
-                      expand = TRUE)
-  } else {
-    p <- p + coord_sf(expand = TRUE)
-  }
-  return(p)
-}
-```
+En primer lugar se dibujará en el mapa todas las paradas de transporte público.
 
 ```{r}
 zona_tipo = "barrio"
@@ -433,16 +430,10 @@ zonas_con_valenbisi <- df.transporte %>%
   unique() %>% 
   sort()
 
-zonas_unificadas <- st_buffer(
-  df.pob %>% filter(tipo==zona_tipo) %>% filter(id %in% zonas_con_valenbisi) %>% st_union(), 
-  BUFFER_BORDE
-)
 df.zonas_mapa <- df.pob %>% filter(tipo==zona_tipo) %>% mutate(is_dentro = id %in% zonas_con_valenbisi)
-caja <- st_bbox(zonas_unificadas)
 
 plot_mapa_transporte(
   df_distritos = df.zonas_mapa, 
-  zonas_unif = zonas_unificadas, 
   df_transp = df.transporte, 
   bbox = NULL,
   fill_zones = FALSE,
@@ -450,9 +441,20 @@ plot_mapa_transporte(
 )
 ```
 
+Como se puede observar, *Valenbisi* tiene una gran densidad de paradas pero solamente en el centro de Valencia. *EMT* sí que tiene abarca casi la totalidad de la ciudad, incluyendo la playa. Por otro lado, *FGV* es un tipo de transporte más ámplio que conecta a Valencia con incluso municipios vecinos.
+
+Debido a la limitada extensión de *Valenbisi*, se centrará el estudio en los barrios que contienen al menos uno de sus estacionamientos.
+
 ```{r, fig.width=8, fig.height=2.5}
+zonas_unificadas <- st_buffer(
+  df.pob %>% filter(tipo==zona_tipo) %>% filter(id %in% zonas_con_valenbisi) %>% st_union(), 
+  BUFFER_BORDE
+)
+caja <- st_bbox(zonas_unificadas)
 plot_mapa_transporte(df.zonas_mapa, zonas_unificadas, df.transporte, caja)
 ```
+
+- [ ] TO DO: Explicar qué es el perímetro `BUFFER_BORDE`. Justificarlo con la gráfica de Ángel?
 
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
