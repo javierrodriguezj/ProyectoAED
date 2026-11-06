@@ -486,7 +486,9 @@ Preparamos las paradas de cada modo, el dominio de estudio (zonas con al menos u
 
 Justificar el umbral de cercanía:
 
-```{r}
+- [ ] TO DO: Literatura (con "se" en lugar de primera persona) ya en limpio.
+
+```{r, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
 # Para justificar el umbral solo usamos las paradas dentro del dominio
 paradas <- split(df.transporte, df.transporte$empresa)
 df.emt_dom <- paradas$EMT %>% st_filter(dominio)
@@ -500,25 +502,27 @@ df_distancias <- data.frame(
   distancia_minima = c(min_dist_emt, min_dist_fgv)
 )
 
-ggplot(df_distancias, aes(x = distancia_minima, fill = Transporte)) +
+g1 <- ggplot(df_distancias, aes(x = distancia_minima, fill = Transporte)) +
   geom_density(alpha = 0.6) +
-  scale_fill_manual(values = c("EMT" = "#c70c30", "FGV" = "#fabd00")) +
+  scale_fill_manual(values = COL_MODO[c("EMT", "FGV")]) +
   scale_x_continuous(limits = c(0, 1500), breaks = seq(0, 1500, by = 250)) +
-  labs(title = "Distribución de la distancia al Valenbisi más cercano",
+  labs(title = "Distancia al Valenbisi más cercano",
        x = "Distancia (m)", y = "Densidad") +
   theme_minimal()
 
 # Acumulado:
-ggplot(df_distancias, aes(x = distancia_minima, colour = Transporte)) +
+g2 <- ggplot(df_distancias, aes(x = distancia_minima, colour = Transporte)) +
   stat_ecdf(geom = "step", linewidth = 1) +
   scale_colour_manual(values = COL_MODO) +
   geom_vline(xintercept = 250, linetype = "dashed", colour = "grey40") +
   scale_y_continuous(labels = scales::percent) +
   coord_cartesian(xlim = c(0, 1000)) +
-  labs(title = "Porcentaje de paradas con Valenbisi a distancia X",
-       subtitle = "La línea discontinua indica el umbral de 250 metros",
+  labs(title = "Acumulado: distancia al Valenbisi",
+       subtitle = "La línea discontinua indica el codo",
        x = "Distancia (m)", y = "Paradas acumuladas") +
   theme_minimal()
+
+g1 + g2 + plot_layout(ncol = 2)
 ```
 
 ```{r}
@@ -567,3 +571,7 @@ hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = me
 
 sum(desierto[1:9]) / sum(desierto)  # peso de los 9 primeros
 ```
+
+- [ ] TO DO: Ver por qué el último resultado sale NA.
+
+- [ ] TO DO: Literatura. Comentar las figuras.
