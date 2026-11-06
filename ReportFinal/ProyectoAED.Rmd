@@ -388,14 +388,14 @@ caja <- st_bbox(zonas_unificadas)
 plot_mapa_transporte(df.zonas_mapa, zonas_unificadas, df.transporte, caja)
 ```
 
-A continuación, eliminaremos las zonas zombreadas del dataset ya que no contienen ninguna parada de *Valenbisi*. Por otro lado, hay un pequeño barrio en el centro urbano que no tiene paradas: el barrio "El Pilar". Crearemos otra variable con este barrio porque, al ser céntrico, sí que nos interesa para otros análisis.
+A continuación, se eliminarán las zonas zombreadas del dataset ya que no contienen ninguna parada de *Valenbisi*. Por otro lado, hay un pequeño barrio en el centro urbano que no tiene paradas: el barrio "El Pilar". Crearemos otra variable con este barrio porque, al ser céntrico, sí que nos interesa para otros análisis.
 
 ```{r}
 df.pob_con_bicis <- df.pob %>% filter(id %in% zonas_con_valenbisi)
 df.pob <- df.pob_con_bicis %>% bind_rows(df.pob %>% filter(nombre == "EL PILAR"))
 ```
 
-- [ ] TO DO: Explicar qué es el perímetro `BUFFER_BORDE`. Justificarlo con la gráfica de Ángel?
+En la figura anterior se ha dibujado un perímetro alrededor de la zona de interés. En la Sección 7 se explicará su significado.
 
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
