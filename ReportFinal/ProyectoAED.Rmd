@@ -447,6 +447,8 @@ g3 <- ggplot(datos_transporte_barrio) +
 g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
 
+- [ ] TO DO: COMENTAR ESTA FIGURA
+
 ```{r}
 
 datos_transporte_barrio <- datos_transporte_barrio %>% mutate(transporte_total = n_emt + n_metro + n_valenbisi, ratio_transporte_densidad = ifelse(densidad > 0, transporte_total / densidad, NA))
@@ -469,6 +471,8 @@ ggplot(datos_transporte_barrio) +
   theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
   labs(title = "Oferta de transporte respecto a la densidad de población", fill = "Transporte/densidad")
 ```
+
+- [ ] TO DO: CAMBIAR LA ULTIMA FIGURA POR Transporte/Poblacion, a ver que tal.
 
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
 
