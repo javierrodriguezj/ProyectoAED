@@ -404,7 +404,8 @@ df.pob <- df.pob %>%
     tipo == "distrito",
     as.integer(coddistbar %/% 10),
     as.integer(coddistbar)
-  )) %>%
+  ),
+  tipo = as.factor(tipo)) %>%
   distinct() %>%
   rename(id = coddistbar) %>%
   st_as_sf(sf_column_name = "geometria")
@@ -457,7 +458,7 @@ plot_mapa_transporte(df.zonas_mapa, zonas_unificadas, df.transporte, caja)
 A continuación, eliminaremos las zonas zombreadas del dataset ya que no contienen ninguna parada de *Valenbisi*.
 
 ```{r}
-df.pob <- df.pob %>% filter(tipo == zona_tipo, id %in% zonas_con_valenbisi)
+df.pob <- df.pob %>% filter((tipo == zona_tipo) & id %in% zonas_con_valenbisi)
 ```
 
 - [ ] TO DO: Explicar qué es el perímetro `BUFFER_BORDE`. Justificarlo con la gráfica de Ángel?

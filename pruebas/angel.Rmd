@@ -338,6 +338,12 @@ ggplot(df_distancias, aes(x = distancia_minima, color = Transporte)) +
     y = "Porcentaje acumulado"
   ) +
   theme_minimal()
+
+```
+
+```{r}
+ggplot(df.pob2) + 
+  geom_sf()
 ```
 
 ## DEPRECATED
