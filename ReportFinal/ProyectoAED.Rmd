@@ -517,11 +517,6 @@ g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 
 datos_transporte_barrio <- datos_transporte_barrio %>% mutate(transporte_total = n_emt + n_metro + n_valenbisi, ratio_transporte_densidad = ifelse(densidad > 0, transporte_total / densidad, NA))
 
-datos_transporte_barrio %>%
-  st_drop_geometry() %>%
-  select(nombre, densidad, n_emt, n_metro, n_valenbisi, transporte_total) %>%
-  arrange(desc(densidad))
-
 cor(datos_transporte_barrio$densidad,
     datos_transporte_barrio$transporte_total,
     use = "complete.obs")
