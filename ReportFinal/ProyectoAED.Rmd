@@ -280,32 +280,12 @@ datos_transporte_barrio <- df.pob_con_bicis %>% left_join(emt_n_barrio, by = "id
 ```
 
 ```{r}
-g0 <- ggplot(df.pob) +
-  geom_sf(aes(fill = densidad)) +
-  scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
-  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-  labs(title = "Densidad de población por barrio", fill = "Habitantes/km²")
-
-g1 <- ggplot(datos_transporte_barrio) +
-  geom_sf(aes(fill = n_emt)) +
-  scale_fill_gradient(low = "lightblue", high = "darkblue") +
-  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-  labs(title = "Paradas de EMT por barrio", fill = "nº paradas")
-
-g2 <- ggplot(datos_transporte_barrio) +
-  geom_sf(aes(fill = n_metro)) +
-  scale_fill_gradient(low = "red", high = "darkred") +
-  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-  labs(title = "Paradas de Metrovalencia por barrio", fill = "nº paradas")
-
-g3 <- ggplot(datos_transporte_barrio) +
-  geom_sf(aes(fill = n_valenbisi)) +
-  scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
-  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-  labs(title = "Estaciones de Valenbisi por barrio", fill = "nº estaciones")
-
-
-g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
+b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b); d <- datos_transporte_barrio
+ggplot(df.pob)+geom_sf(aes(fill=densidad))+scale_fill_gradient(low="#FF69B4", high="#8B0A50")+t+labs(title="Densidad de población por barrio", fill="Habitantes/km²") +
+  ggplot(d)+geom_sf(aes(fill=n_emt))+scale_fill_gradient(low="lightblue", high="darkblue")+t+labs(title="Paradas de EMT por barrio", fill="Nº paradas") +
+  ggplot(d)+geom_sf(aes(fill=n_metro))+scale_fill_gradient(low="red", high="darkred")+t+labs(title="Paradas de Metrovalencia por barrio", fill="Nº paradas") +
+  ggplot(d)+geom_sf(aes(fill=n_valenbisi))+scale_fill_gradient(low="lightgreen", high="darkgreen")+t+labs(title="Estaciones de Valenbisi por barrio", fill="Nº estaciones") +
+  plot_layout(ncol=2)
 ```
 
 - [ ] TO DO: COMENTAR LA FIGURA ANTERIOR

@@ -90,14 +90,7 @@ head(as_tibble(df.pob[1:3,]))
 Dibujamos los mapas completos
 
 ```{r}
-zonas_con_valenbisi <- df.transporte %>% 
-  as_tibble() %>% 
-  filter(empresa == "Valenbisi") %>% 
-  st_as_sf(sf_column_name = "geometria") %>% 
-  st_join(df.pob %>% select(id)) %>% 
-  pull(id) %>% 
-  unique() %>% 
-  sort()
+
 
 df.zonas_mapa <- df.pob %>% mutate(is_dentro = id %in% zonas_con_valenbisi)
 
@@ -108,4 +101,35 @@ plot_mapa_transporte(
   fill_zones = FALSE,
   draw_perimeter = FALSE
 )
+```
+
+# P1
+
+```
+g0 <- ggplot(df.pob) +
+  geom_sf(aes(fill = densidad)) +
+  scale_fill_gradient(low = "#FF69B4", high = "#8B0A50") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Densidad de población por barrio", fill = "Habitantes/km²")
+
+g1 <- ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = n_emt)) +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Paradas de EMT por barrio", fill = "nº paradas")
+
+g2 <- ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = n_metro)) +
+  scale_fill_gradient(low = "red", high = "darkred") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Paradas de Metrovalencia por barrio", fill = "nº paradas")
+
+g3 <- ggplot(datos_transporte_barrio) +
+  geom_sf(aes(fill = n_valenbisi)) +
+  scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
+  theme_minimal() + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  labs(title = "Estaciones de Valenbisi por barrio", fill = "nº estaciones")
+
+
+g0 + g1 + g2 + g3 + plot_layout(ncol = 2)
 ```
