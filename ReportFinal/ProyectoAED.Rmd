@@ -95,46 +95,15 @@ dist_min <- function(origen, destino) {
 }
 
 
-leer_excels <- function(ruta) {
-  hoja <- read_excel(ruta, sheet = "Padron", col_names = FALSE,
-                     col_types = "list", .name_repair = "minimal")
-  valor <- function(f, c) {
-    if (f > nrow(hoja) || c < 1 || c > ncol(hoja)) return(NA_real_)
-    v <- hoja[[c]][[f]]
-    if (is.null(v) || length(v) == 0) NA_real_ else suppressWarnings(as.numeric(v))
+leer_excels <- function(r) {
+  h <- read_excel(r, "Padron", col_names=F, col_types="list", .name_repair="minimal")
+  b <- basename(r); p <- NA_real_; u <- as.integer(regmatches(b, gregexpr("\\d+", b))[[1]])
+  c <- which(!is.na(g <- sapply(h, function(x) grep("^\\s*Densidad de poblaci", x)[1])))[1]
+  if(is.na(c)) warning("No se encontró la cabecera de densidad en ", b) else {
+    f <- g[c]+1; c <- c-2
+    if(c>0 && f<=nrow(h) && length(v <- h[[c]][[f]])) p <- suppressWarnings(as.numeric(v))
   }
-  # Nombre del barrio a partir del título (celda A1),
-  # p. ej. "1. Padrón a 01/01/2025 . Barrio 1.1. la Seu"
-  titulo <- as.character(hoja[[1]][[1]])
-  nombre <- sub(".*Barrio\\s+\\d+\\.\\d+\\.\\s*", "", titulo)
-  num <- as.integer(regmatches(basename(ruta), gregexpr("\\d+", basename(ruta)))[[1]])
-  
-  # Buscar la cabecera de densidad
-  pos <- NULL
-  for (c in seq_along(hoja)) {
-    textos <- vapply(hoja[[c]], function(x) if (is.character(x)) x else NA_character_, character(1))
-    f <- which(grepl("^\\s*Densidad de poblaci", textos))
-    if (length(f) > 0) { pos <- c(f[1], c); break }
-  }
-  
-  if (is.null(pos)) {
-    densidad <- personas <- superficie <- NA_real_
-    warning("No se encontró la cabecera de densidad en ", basename(ruta))
-  } else {
-    #densidad   <- valor(pos[1] + 1, pos[2])
-    #superficie <- valor(pos[1] + 1, pos[2] - 1)
-    personas   <- valor(pos[1] + 1, pos[2] - 2)
-  }
-  
-  data.frame(
-    coddistrit       = num[1],
-    codbar         = num[2],
-    nombre_barrio  = nombre,
-    personas       = personas,
-    #superficie_barrio  = superficie,
-    #densidad_barrio = densidad,
-    stringsAsFactors = FALSE
-  )
+  data.frame(coddistrit=u[1], codbar=u[2], nombre_barrio=sub(".*Barrio\\s+\\d+\\.\\d+\\.\\s*", "", as.character(h[[1]][[1]])), personas=p, stringsAsFactors=F)
 }
 
 
