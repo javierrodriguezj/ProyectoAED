@@ -155,8 +155,6 @@ Finalmente, es curioso ver que *Barrios* tiene un elemento duplicado de la varia
 
 # Conseguir un dataset *tidy*
 
-## Datos de transporte público
-
 En primer lugar, se agruparán todos los datos de transporte públio en un único dataframe *tidy*.
 
 ```{r}
@@ -180,9 +178,7 @@ df.transporte <- bind_rows(
 
 `df.transporte` engloba la ubicación, el identificador y las líneas que pasan por cada parada de *Valenbisi*, *EMT* y *FGV*.
 
-## Datos de los barrios y distritos
-
-En primer lugar se fusionarán "MAHUELLA-TAULADELLA" y "RAFALELL-VISTABELLA" como una única fila, ya que son en realidad el mismo barrio.
+En cuanto a la base de datos de población, se han de fusionar "MAHUELLA-TAULADELLA" y "RAFALELL-VISTABELLA" como una única fila, ya que son en realidad el mismo barrio.
 
 ```{r}
 filepath <- paste0(savedir, "geom_barrios.geojson")
@@ -240,36 +236,13 @@ df.pob <- df.geom_barrios %>% mutate(
 
 # Exploración inicial de los datos
 
-## Transportes
-
-En primer lugar se dibujará en el mapa todas las paradas de transporte público.
-
-```{r}
-zonas_con_valenbisi <- df.transporte %>% 
-  as_tibble() %>% 
-  filter(empresa == "Valenbisi") %>% 
-  st_as_sf(sf_column_name = "geometria") %>% 
-  st_join(df.pob %>% select(id)) %>% 
-  pull(id) %>% 
-  unique() %>% 
-  sort()
-
-df.zonas_mapa <- df.pob %>% mutate(is_dentro = id %in% zonas_con_valenbisi)
-
-plot_mapa_transporte(
-  df_distritos = df.zonas_mapa, 
-  df_transp = df.transporte, 
-  bbox = NULL,
-  fill_zones = FALSE,
-  draw_perimeter = FALSE
-)
-```
-
-Como se puede observar, *Valenbisi* tiene una gran densidad de paradas pero solamente en el centro de Valencia. *EMT* sí que tiene abarca casi la totalidad de la ciudad, incluyendo la playa. Por otro lado, *FGV* es un tipo de transporte más ámplio que conecta a Valencia con incluso municipios vecinos.
+*Valenbisi* tiene una gran densidad de paradas pero solamente en el centro de Valencia. *EMT* sí que tiene abarca casi la totalidad de la ciudad, incluyendo la playa. Por otro lado, *FGV* es un tipo de transporte más ámplio que conecta a Valencia con incluso municipios vecinos.
 
 Debido a la limitada extensión de *Valenbisi*, se centrará el estudio en los barrios que contienen al menos uno de sus estacionamientos.
 
 ```{r, fig.width=8, fig.height=2.5}
+zonas_con_valenbisi <- df.transporte %>% as_tibble() %>% filter(empresa == "Valenbisi") %>% st_as_sf(sf_column_name = "geometria") %>% st_join(df.pob %>% select(id)) %>% pull(id) %>% unique() %>% sort()
+df.zonas_mapa <- df.pob %>% mutate(is_dentro = id %in% zonas_con_valenbisi)
 dominio <- df.pob %>% filter(id %in% zonas_con_valenbisi) %>% st_union()
 zonas_unificadas <- st_buffer(dominio, BUFFER_BORDE)
 caja <- st_bbox(zonas_unificadas)

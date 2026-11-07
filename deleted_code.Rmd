@@ -86,3 +86,26 @@ df.pob <- if (zona_tipo=="barrio") df.pob_barrios else df.pob_distritos
 
 head(as_tibble(df.pob[1:3,]))
 ```
+
+Dibujamos los mapas completos
+
+```{r}
+zonas_con_valenbisi <- df.transporte %>% 
+  as_tibble() %>% 
+  filter(empresa == "Valenbisi") %>% 
+  st_as_sf(sf_column_name = "geometria") %>% 
+  st_join(df.pob %>% select(id)) %>% 
+  pull(id) %>% 
+  unique() %>% 
+  sort()
+
+df.zonas_mapa <- df.pob %>% mutate(is_dentro = id %in% zonas_con_valenbisi)
+
+plot_mapa_transporte(
+  df_distritos = df.zonas_mapa, 
+  df_transp = df.transporte, 
+  bbox = NULL,
+  fill_zones = FALSE,
+  draw_perimeter = FALSE
+)
+```
