@@ -311,55 +311,27 @@ Justificar el umbral de cercanía:
 - [ ] TO DO: Literatura (con "se" en lugar de primera persona) ya en limpio.
 
 ```{r, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
-# Para justificar el umbral solo usamos las paradas dentro del dominio
-paradas <- split(df.transporte, df.transporte$empresa)
-df.emt_dom <- paradas$EMT %>% st_filter(dominio)
-df.fgv_dom <- paradas$FGV %>% st_filter(dominio)
-
-min_dist_emt <- dist_min(df.emt_dom, paradas$Valenbisi)
-min_dist_fgv <- dist_min(df.fgv_dom, paradas$Valenbisi)
-
-df_distancias <- data.frame(
-  Transporte = c(rep("EMT", length(min_dist_emt)), rep("FGV", length(min_dist_fgv))),
-  distancia_minima = c(min_dist_emt, min_dist_fgv)
-)
-
-g1 <- ggplot(df_distancias, aes(x = distancia_minima, fill = Transporte)) +
-  geom_density(alpha = 0.6) +
-  scale_fill_manual(values = COL_MODO[c("EMT", "FGV")]) +
-  scale_x_continuous(limits = c(0, 1500), breaks = seq(0, 1500, by = 250)) +
-  labs(title = "Distancia al Valenbisi más cercano",
-       x = "Distancia (m)", y = "Densidad") +
-  theme_minimal()
-
-# Acumulado:
-g2 <- ggplot(df_distancias, aes(x = distancia_minima, colour = Transporte)) +
-  stat_ecdf(geom = "step", linewidth = 1) +
-  scale_colour_manual(values = COL_MODO) +
-  geom_vline(xintercept = 250, linetype = "dashed", colour = "grey40") +
-  scale_y_continuous(labels = scales::percent) +
-  coord_cartesian(xlim = c(0, 1000)) +
-  labs(title = "Acumulado: distancia al Valenbisi",
-       subtitle = "La línea discontinua indica el codo",
-       x = "Distancia (m)", y = "Paradas acumuladas") +
-  theme_minimal()
-
-g1 + g2 + plot_layout(ncol = 2)
+p <- split(df.transporte, df.transporte$empresa); v <- p$Valenbisi
+e <- dist_min(st_filter(p$EMT, dominio), v); f <- dist_min(st_filter(p$FGV, dominio), v)
+d <- data.frame(Transporte=rep(c("EMT","FGV"), c(length(e), length(f))), distancia_minima=c(e,f))
+t <- theme_minimal()
+ggplot(d, aes(distancia_minima, fill=Transporte))+geom_density(alpha=.6)+scale_fill_manual(values=COL_MODO)+scale_x_continuous(limits=c(0,1500), breaks=seq(0,1500,250))+labs(title="Distancia al Valenbisi más cercano", x="Distancia (m)", y="Densidad")+t +
+  ggplot(d, aes(distancia_minima, col=Transporte))+stat_ecdf(geom="step", linewidth=1)+scale_color_manual(values=COL_MODO)+geom_vline(xintercept=250, lty=2, col="grey40")+scale_y_continuous(labels=scales::percent)+coord_cartesian(xlim=c(0,1000))+labs(title="Acumulado: distancia al Valenbisi", subtitle="La línea discontinua indica el codo", x="Distancia (m)", y="Paradas acumuladas")+t+plot_layout(ncol=2)
 ```
 
 ```{r}
 rejilla <- st_make_grid(dominio, cellsize = HEX_M, square = FALSE)
 dentro  <- lengths(st_within(st_centroid(rejilla), dominio)) > 0
-rejilla <- rejilla[dentro]          # solo hexágonos con el centro dentro del dominio
-centros <- st_centroid(rejilla)     # un centro por hexágono, ya filtrados
+rejilla <- rejilla[dentro] # Solo hexágonos con el centro dentro del dom
+centros <- st_centroid(rejilla) # un centro por hexágono, ya filtrados
 ```
 
 Ahora calculamos las distancias entre los centros de los hexágonos y cada uno de los medios de transporte.
 
 ```{r}
-dist_vb  <- dist_min(centros, paradas$Valenbisi)
-dist_emt <- dist_min(centros, paradas$EMT)
-dist_fgv <- dist_min(centros, paradas$FGV)
+dist_vb  <- dist_min(centros, p$Valenbisi)
+dist_emt <- dist_min(centros, p$EMT)
+dist_fgv <- dist_min(centros, p$FGV)
 
 # Cobertura
 
