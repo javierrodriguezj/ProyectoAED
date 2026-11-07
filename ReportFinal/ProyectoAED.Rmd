@@ -295,7 +295,7 @@ d <- datos_transporte_barrio <- mutate(datos_transporte_barrio, transporte_total
 b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b, panel.grid=b); s <- scale_fill_gradient(low="white", high="blue")
 c <- paste("Hay una correlación del", round(cor(d$personas, d$transporte_total, use="complete.obs"), 2), "entre el número de habitantes y el número total de puntos de transporte")
 ggplot(d)+geom_sf(aes(fill=transporte_total))+s+t+labs(title="Transporte total por barrio", fill="Transporte") +
-  ggplot(d)+geom_sf(aes(fill=ratio_transporte_persona))+s+t+labs(title="Transporte respecto a la población", fill="Transporte/persona") + plot_layout(ncol=2) + plot_annotation(caption=c)
+  ggplot(d)+geom_sf(aes(fill=ratio_transporte_persona))+s+t+labs(title="Transporte respecto a la población", fill="Transporte/persona") + plot_layout(ncol=2) + plot_annotation(caption=c,theme = theme(plot.caption = element_text(size = 12)))
 ```
 
 El transporte total no se distribuye de forma homogénea entre los barrios, por lo que se analiza también la oferta relativa mediante el ratio transporte/personas. Este permite comparar la disponibilidad de transporte teniendo en cuenta la población de cada zona. La correlación entre habitantes y puntos de transporte es de 0,64, lo que indica que los barrios más poblados tienden a disponer de más transporte, aunque la relación no es igual en todos los barrios.
