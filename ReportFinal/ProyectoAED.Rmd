@@ -88,12 +88,10 @@ invisible(lapply(packages, library, character.only = TRUE))
 También se definen a continuación algunas funciones que se usarán a lo largo del documento.
 
 ```{r Funciones}
-# Cálculo de la distancia mínima
 dist_min <- function(origen, destino) {
   idx <- st_nearest_feature(origen, destino)
   as.numeric(st_distance(origen, destino[idx, ], by_element = TRUE))
 }
-
 
 leer_excels <- function(r) {
   h <- read_excel(r, "Padron", col_names=F, col_types="list", .name_repair="minimal")
@@ -106,36 +104,13 @@ leer_excels <- function(r) {
   data.frame(coddistrit=u[1], codbar=u[2], nombre_barrio=sub(".*Barrio\\s+\\d+\\.\\d+\\.\\s*", "", as.character(h[[1]][[1]])), personas=p, stringsAsFactors=F)
 }
 
-
-# Plotear las paradas de transporte público en el mapa de Valencia
-plot_mapa_transporte <- function(df_distritos, zonas_unif = NULL, df_transp, bbox = NULL, colores = COL_MODO, fill_zones = TRUE, draw_perimeter = TRUE) {
-  
-  p <- ggplot()
-  if (fill_zones) {
-    p <- p + 
-      geom_sf(data = df_distritos, aes(fill = is_dentro), colour = "grey75", linewidth = 0.25) +
-      scale_fill_manual(values = c(`TRUE` = "white", `FALSE` = "grey92"), guide = "none")
-  } else {
-    p <- p + geom_sf(data = df_distritos, fill = "white", colour = "grey75", linewidth = 0.25)
-  }
-  if (draw_perimeter && !is.null(zonas_unif)) {
-    p <- p + 
-      geom_sf(data = st_sf(geometry = zonas_unif), fill = NA, colour = "grey50", linetype = "dashed")
-  }
-  p <- p + 
-    geom_sf(data = df_transp, aes(colour = empresa), size = 0.45, show.legend = FALSE) +
-    facet_wrap(~ empresa) +
-    scale_colour_manual(values = colores) +
-    theme_void() +
-    theme(strip.text = element_text(face = "bold", hjust = 0))
-  if (!is.null(bbox)) {
-    p <- p + coord_sf(xlim = bbox[c("xmin", "xmax")], 
-                      ylim = bbox[c("ymin", "ymax")], 
-                      expand = TRUE)
-  } else {
-    p <- p + coord_sf(expand = TRUE)
-  }
-  return(p)
+plot_mapa_transporte <- function(df_distritos, zonas_unif=NULL, df_transp, bbox=NULL, colores=COL_MODO, fill_zones=T, draw_perimeter=T) {
+  ggplot() +
+    (if(fill_zones) list(geom_sf(data=df_distritos, aes(fill=is_dentro), col="grey75", linewidth=.25), scale_fill_manual(values=c(`TRUE`="white", `FALSE`="grey92"), guide="none")) else geom_sf(data=df_distritos, fill="white", col="grey75", linewidth=.25)) +
+    (if(draw_perimeter && !is.null(zonas_unif)) geom_sf(data=st_sf(geometry=zonas_unif), fill=NA, col="grey50", lty="dashed")) +
+    geom_sf(data=df_transp, aes(col=empresa), size=.45, show.legend=F) +
+    facet_wrap(~empresa) + scale_color_manual(values=colores) + theme_void() + theme(strip.text=element_text(face="bold", hjust=0)) +
+    coord_sf(xlim=bbox[c("xmin","xmax")], ylim=bbox[c("ymin","ymax")], expand=T)
 }
 ```
 
@@ -147,33 +122,27 @@ A continuación se descargarán todos los datos desde la web del Ayuntamiento de
 savedir <- '../data/'
 if (!file.exists(savedir)) dir.create(savedir)
 
-# Valenbisi
-filepath <- paste0(savedir, 'valenbisi.geojson')
+filepath <- paste0(savedir, 'valenbisi.geojson') # Valenbisi
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
 
-# EMT
-filepath <- paste0(savedir, 'emt.geojson')
+filepath <- paste0(savedir, 'emt.geojson') # EMT
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
 
-# FGV Paradas
-filepath <- paste0(savedir, 'fgv_paradas.geojson')
+filepath <- paste0(savedir, 'fgv_paradas.geojson') # FGV Paradas
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
 
-# Geometría barrios
-filepath <- paste0(savedir, 'geom_barrios.geojson')
+filepath <- paste0(savedir, 'geom_barrios.geojson') # Geom barrios
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
 
-# Geometría distritos
-filepath <- paste0(savedir, 'geom_distritos.geojson')
+filepath <- paste0(savedir, 'geom_distritos.geojson') # Geom distritos
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
 
-# Población por barrios
-filepath <- paste0(savedir, 'barrios.zip')
+filepath <- paste0(savedir, 'barrios.zip') # Población
 url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"
 if (!file.exists(filepath)) download.file(url_descarga, destfile = filepath, mode = "wb")
 ```
@@ -207,7 +176,6 @@ df.transporte <- bind_rows(
   df.fgv_paradas %>% transmute(gid=as.integer(gid), empresa="FGV", lineas=strsplit(linea, ",")),
 ) %>% rename(geometria=geometry) %>%
   mutate(empresa=as.factor(empresa))
-str(df.transporte[1:2,])
 ```
 
 `df.transporte` engloba la ubicación, el identificador y las líneas que pasan por cada parada de *Valenbisi*, *EMT* y *FGV*.
@@ -231,7 +199,7 @@ df.geom_barrios <- df.geom_barrios %>%
     gis.gis.BARRIOS.area = sum(gis.gis.BARRIOS.area, na.rm = TRUE),
     .groups = "drop"
   )
-cat("Ahora ya hay", length(unique(df.geom_barrios$coddistbar)), "coddistbar únicos, y", nrow(df.geom_barrios), "filas en el dataframe.")
+cat(length(unique(df.geom_barrios$coddistbar)), "coddistbar únicos, y", nrow(df.geom_barrios), "filas.")
 ```
 
 El archivo `barrios.zip` contiene varios archivos `.xlsx`, que son los que realmente contienen los datos que nos interesan. Concretamente, se extraerán los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. Cabe observar que solo hay un archivo `.xlsx` correspondiente al barrio 17.5, que es la entrada duplicada mencionada anteriormente, lo cual refuerza la idea de que ambos son el mismo barrio. A continuación, se extraerá el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
@@ -247,13 +215,12 @@ archivos <- list.files(folder, pattern = "^Distrito_\\d+_Barrio_\\d+\\.xlsx$", f
 df.info_excels <- do.call(rbind, lapply(archivos, leer_excels)) %>% arrange(coddistrit, codbar)
 rownames(df.info_excels) <- NULL
 
-zona_tipo <- "barrio" # Elegir entre "barrio" o "distritos"
 unidades <- "ha" # Elegir unidades (ver unidades_lista)
 unidades_lista <- list(m2=1, ha=1e-4, km2=1e-6)
 unidades_factor <- as.numeric(unidades_lista[unidades])
 
 # Creamos un dataframe con toda la info de los barrios
-df.pob_barrios <- df.geom_barrios %>% mutate(
+df.pob <- df.geom_barrios %>% mutate(
   id = as.integer(coddistbar),
   superficie = as.numeric(st_area(geometry)) * unidades_factor
 ) %>% rename(geometria = geometry) %>% select(id, nombre, superficie, geometria) %>%
@@ -269,30 +236,6 @@ df.pob_barrios <- df.geom_barrios %>% mutate(
     superficie = sum(superficie, na.rm = TRUE),
     densidad   = personas/superficie
   )
-
-# OPCIONAL: en caso de querer los distritos, los calculamos también.
-df.pob_distritos <- df.geom_distritos %>% mutate(
-  id = as.integer(coddistrit),
-  superficie = as.numeric(st_area(geometry)) * unidades_factor
-) %>% rename(geometria = geometry) %>% select(id, nombre, geometria) %>%
-  # Añadimos la cantidad de personas de cada distrito
-  left_join(
-    df.info_excels %>% group_by(coddistrit) %>% summarise(personas=sum(personas, na.rm=TRUE)) %>% rename(id=coddistrit), 
-    by="id") %>%
-  # Unimos los poligonos inconexos en una misma fila
-  group_by(id) %>%
-  summarise(
-    nombre     = first(nombre),
-    personas   = first(personas), # En los excel aparce ya el total.
-  ) %>% mutate(
-    superficie = as.numeric(st_area(geometria)) * unidades_factor,
-    densidad = personas/superficie
-    )
-
-# Elegimos la tabla que nos interesa
-df.pob <- if (zona_tipo=="barrio") df.pob_barrios else df.pob_distritos
-
-head(as_tibble(df.pob[1:3,]))
 ```
 
 # Exploración inicial de los datos

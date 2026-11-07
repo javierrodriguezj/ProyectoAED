@@ -1,5 +1,7 @@
 # Funciones
 
+```{r}
+# Para imprimir info básica sobre un dataframe
 resumen_df <- function(df, nombre = "Dataset") {
   geo <- ""
   if (inherits(df, "sf")) {
@@ -18,3 +20,69 @@ resumen_df <- function(df, nombre = "Dataset") {
   
   print(info, quote = FALSE, right = FALSE)
 }
+
+resumen_df(data, "Valenbisi")
+resumen_df(data, "EMT")
+resumen_df(data, "FGV")
+resumen_df(data, "Barrios")
+resumen_df(data, "Distritos")
+```
+
+```{r}
+# Descomprimimos el .zip y listamos los archivos.
+filepath <- paste0(savedir, 'barrios.zip')
+folder <- paste0(savedir, "barrios/")
+unzip(filepath, exdir = folder)
+archivos <- list.files(folder, pattern = "^Distrito_\\d+_Barrio_\\d+\\.xlsx$", full.names = TRUE)
+
+# Leemos los archivos
+df.info_excels <- do.call(rbind, lapply(archivos, leer_excels)) %>% arrange(coddistrit, codbar)
+rownames(df.info_excels) <- NULL
+
+zona_tipo <- "barrio" # Elegir entre "barrio" o "distritos"
+unidades <- "ha" # Elegir unidades (ver unidades_lista)
+unidades_lista <- list(m2=1, ha=1e-4, km2=1e-6)
+unidades_factor <- as.numeric(unidades_lista[unidades])
+
+# Creamos un dataframe con toda la info de los barrios
+df.pob_barrios <- df.geom_barrios %>% mutate(
+  id = as.integer(coddistbar),
+  superficie = as.numeric(st_area(geometry)) * unidades_factor
+) %>% rename(geometria = geometry) %>% select(id, nombre, superficie, geometria) %>%
+  left_join(df.info_excels %>% mutate(
+      id=as.integer(paste0(coddistrit, codbar))), 
+      by="id"
+    ) %>%
+  # Unimos los poligonos inconexos en una misma fila
+  group_by(id) %>%
+  summarise(
+    nombre     = paste(nombre, collapse = "-"),
+    personas   = first(personas), # En los excel aparce ya el total.
+    superficie = sum(superficie, na.rm = TRUE),
+    densidad   = personas/superficie
+  )
+
+# OPCIONAL: en caso de querer los distritos, los calculamos también.
+df.pob_distritos <- df.geom_distritos %>% mutate(
+  id = as.integer(coddistrit),
+  superficie = as.numeric(st_area(geometry)) * unidades_factor
+) %>% rename(geometria = geometry) %>% select(id, nombre, geometria) %>%
+  # Añadimos la cantidad de personas de cada distrito
+  left_join(
+    df.info_excels %>% group_by(coddistrit) %>% summarise(personas=sum(personas, na.rm=TRUE)) %>% rename(id=coddistrit), 
+    by="id") %>%
+  # Unimos los poligonos inconexos en una misma fila
+  group_by(id) %>%
+  summarise(
+    nombre     = first(nombre),
+    personas   = first(personas), # En los excel aparce ya el total.
+  ) %>% mutate(
+    superficie = as.numeric(st_area(geometria)) * unidades_factor,
+    densidad = personas/superficie
+    )
+
+# Elegimos la tabla que nos interesa
+df.pob <- if (zona_tipo=="barrio") df.pob_barrios else df.pob_distritos
+
+head(as_tibble(df.pob[1:3,]))
+```
