@@ -291,30 +291,11 @@ ggplot(df.pob)+geom_sf(aes(fill=densidad))+scale_fill_gradient(low="#FF69B4", hi
 - [ ] TO DO: COMENTAR LA FIGURA ANTERIOR
 
 ```{r, fig.width=8, fig.height=2.5}
-
-datos_transporte_barrio <- datos_transporte_barrio %>% mutate(transporte_total = n_emt + n_metro + n_valenbisi, ratio_transporte_densidad = ifelse(densidad > 0, transporte_total / densidad, NA))
-
-correlacion <- cor(datos_transporte_barrio$densidad,
-    datos_transporte_barrio$transporte_total,
-    use = "complete.obs")
-
-cat("Hay una correlación del", round(correlacion, 2), "entre el número de paradas totales y la densidad de población")
-
-g1 <- ggplot(datos_transporte_barrio) +
-  geom_sf(aes(fill = transporte_total)) +
-  scale_fill_gradient(low = "white", high = "blue") +
-  theme_minimal() +
-  theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
-  labs(title = "Transporte total por barrio", fill = "Transporte")
-
-g2 <- ggplot(datos_transporte_barrio) +
-  geom_sf(aes(fill = ratio_transporte_densidad)) +
-  scale_fill_gradient(low = "white", high = "blue") +
-  theme_minimal() +
-  theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
-  labs(title = "Oferta de transporte respecto a la densidad de población", fill = "Transporte/densidad")
-
-g1 + g2 + plot_layout(ncol = 2)
+d <- datos_transporte_barrio <- mutate(datos_transporte_barrio, transporte_total=n_emt+n_metro+n_valenbisi, ratio_transporte_densidad=ifelse(densidad>0, transporte_total/densidad, NA))
+b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b, panel.grid=b); s <- scale_fill_gradient(low="white", high="blue")
+c <- paste("Hay una correlación del", round(cor(d$densidad, d$transporte_total, use="complete.obs"), 2), "entre el número de paradas totales y la densidad de población")
+ggplot(d)+geom_sf(aes(fill=transporte_total))+s+t+labs(title="Transporte total por barrio", fill="Transporte") +
+  ggplot(d)+geom_sf(aes(fill=ratio_transporte_densidad))+s+t+labs(title="Oferta de transporte respecto a la densidad de población", fill="Transporte/densidad") + plot_layout(ncol=2) + plot_annotation(caption=c)
 ```
 
 - [ ] TO DO: CAMBIAR LA ULTIMA FIGURA POR Transporte/Poblacion, a ver que tal.
