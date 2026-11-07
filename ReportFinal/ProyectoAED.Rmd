@@ -88,26 +88,6 @@ invisible(lapply(packages, library, character.only = TRUE))
 También se definen a continuación algunas funciones que se usarán a lo largo del documento.
 
 ```{r Funciones}
-# Para imprimir info básica sobre un dataframe
-resumen_df <- function(df, nombre = "Dataset") {
-  geo <- ""
-  if (inherits(df, "sf")) {
-    crs <- sf::st_crs(df)$input
-    geo <- sprintf(" |  %s (%s)", sf::st_geometry_type(df, FALSE), if (is.null(crs) || is.na(crs)) "Sin CRS" else crs)
-  }
-  cat(sprintf("\n %s [%d filas × %d col%s]\n", nombre, nrow(df), ncol(df), geo))
-  
-  t_map <- c(character = "chr", numeric = "dbl", integer = "int", logical = "lgl", factor = "fct", Date = "date", POSIXct = "dttm")
-  
-  info <- rbind(
-    Tipo   = sapply(df, function(x) { c <- class(x)[1]; if (c %in% names(t_map)) t_map[[c]] else sub("^sfc_", "", c) }),
-    NAs    = colSums(is.na(df)),
-    Unicos = sapply(df, function(x) length(unique(x)))
-  )
-  
-  print(info, quote = FALSE, right = FALSE)
-}
-
 # Cálculo de la distancia mínima
 dist_min <- function(origen, destino) {
   idx <- st_nearest_feature(origen, destino)
@@ -157,6 +137,7 @@ leer_excels <- function(ruta) {
   )
 }
 
+
 # Plotear las paradas de transporte público en el mapa de Valencia
 plot_mapa_transporte <- function(df_distritos, zonas_unif = NULL, df_transp, bbox = NULL, colores = COL_MODO, fill_zones = TRUE, draw_perimeter = TRUE) {
   
@@ -201,31 +182,26 @@ if (!file.exists(savedir)) dir.create(savedir)
 filepath <- paste0(savedir, 'valenbisi.geojson')
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
-resumen_df(data, "Valenbisi")
 
 # EMT
 filepath <- paste0(savedir, 'emt.geojson')
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
-resumen_df(data, "EMT")
 
 # FGV Paradas
 filepath <- paste0(savedir, 'fgv_paradas.geojson')
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
-resumen_df(data, "FGV")
 
 # Geometría barrios
 filepath <- paste0(savedir, 'geom_barrios.geojson')
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
-resumen_df(data, "Barrios")
 
 # Geometría distritos
 filepath <- paste0(savedir, 'geom_distritos.geojson')
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
-resumen_df(data, "Distritos")
 
 # Población por barrios
 filepath <- paste0(savedir, 'barrios.zip')
@@ -233,7 +209,7 @@ url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.z
 if (!file.exists(filepath)) download.file(url_descarga, destfile = filepath, mode = "wb")
 ```
 
-Los datasets *Valenbisi*, *EMT* y *FGV* tienen muchas columnas que no son relevantes para este estudio. Son aquellas que actualizan datos de las próximas llegadas cada pocos minutos (`open`, `available`, `free`, `updated_at`, `updated_jcd`, `proximas_llegadas`), y datos específicos de cada parada (`name`, `address`, `total`, `ticket`...). La mayoría de estas variables no serán útiles, pues el interés principal son los datos geográficos y geométricos de las paradas.
+Los datasets *Valenbisi*, *EMT* y *FGV* tienen muchas columnas que no son relevantes para este estudio. Son aquellas que actualizan datos de las próximas llegadas cada pocos minutos, y datos específicos de cada parada (`name`, `address`, `total`, `ticket`...). La mayoría de estas variables no serán útiles, pues el interés principal son los datos geográficos y geométricos de las paradas.
 
 Por otro lado, existen algunos `NA` en las variables `codvia` y `numportal` de *EMT*. Debido a que son identificativos de cada parada, no son relevantes para el estudio. También hay algunos `NA` en las columnas del área de *Barrios* y *Distritos*, lo cual supondrá un problema. Afortunadamente, se encuentra la geometría de todas las zonas, por lo que se podrá imputar estos valores mediante cálculo directo.
 

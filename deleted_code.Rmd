@@ -1,0 +1,20 @@
+# Funciones
+
+resumen_df <- function(df, nombre = "Dataset") {
+  geo <- ""
+  if (inherits(df, "sf")) {
+    crs <- sf::st_crs(df)$input
+    geo <- sprintf(" |  %s (%s)", sf::st_geometry_type(df, FALSE), if (is.null(crs) || is.na(crs)) "Sin CRS" else crs)
+  }
+  cat(sprintf("\n %s [%d filas × %d col%s]\n", nombre, nrow(df), ncol(df), geo))
+  
+  t_map <- c(character = "chr", numeric = "dbl", integer = "int", logical = "lgl", factor = "fct", Date = "date", POSIXct = "dttm")
+  
+  info <- rbind(
+    Tipo   = sapply(df, function(x) { c <- class(x)[1]; if (c %in% names(t_map)) t_map[[c]] else sub("^sfc_", "", c) }),
+    NAs    = colSums(is.na(df)),
+    Unicos = sapply(df, function(x) length(unique(x)))
+  )
+  
+  print(info, quote = FALSE, right = FALSE)
+}
