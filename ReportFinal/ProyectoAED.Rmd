@@ -286,7 +286,9 @@ ggplot(df.pob)+geom_sf(aes(fill=densidad))+scale_fill_gradient(low="#FF69B4", hi
   plot_layout(ncol=2)
 ```
 
-- [ ] TO DO: COMENTAR LA FIGURA ANTERIOR
+En primer lugar, se representa la densidad de población y la disponibilidad de cada medio de transporte por barrio, con el objetivo de visualizar la distribución espacial de la población y de las distintas redes de transporte.
+
+Posteriormente, se analiza la relación entre población y transporte mediante el número total de puntos de transporte y su normalización por habitantes para comparar los barrios independientemente de su tamaño poblacional.
 
 ```{r, fig.width=8, fig.height=2.5}
 d <- datos_transporte_barrio <- mutate(datos_transporte_barrio, transporte_total=n_emt+n_metro+n_valenbisi, ratio_transporte_persona=ifelse(densidad>0, transporte_total/personas, NA))
