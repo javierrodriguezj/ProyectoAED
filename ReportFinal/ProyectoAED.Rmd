@@ -314,7 +314,7 @@ g2 <- ggplot(datos_transporte_barrio) +
   theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) +
   labs(title = "Oferta de transporte respecto a la densidad de población", fill = "Transporte/densidad")
 
-g0 + g1 + plot_layout(ncol = 2)
+g1 + g2 + plot_layout(ncol = 2)
 ```
 
 - [ ] TO DO: CAMBIAR LA ULTIMA FIGURA POR Transporte/Poblacion, a ver que tal.
