@@ -329,34 +329,16 @@ centros <- st_centroid(rejilla) # un centro por hexágono, ya filtrados
 Ahora calculamos las distancias entre los centros de los hexágonos y cada uno de los medios de transporte.
 
 ```{r}
-dist_vb  <- dist_min(centros, p$Valenbisi)
-dist_emt <- dist_min(centros, p$EMT)
-dist_fgv <- dist_min(centros, p$FGV)
-
-# Cobertura
-
-hex <- st_sf(geometry = rejilla) %>%
-  mutate(V = dist_vb  <= UMBRAL["Valenbisi"],
-         E = dist_emt <= UMBRAL["EMT"],
-         F = dist_fgv <= UMBRAL["FGV"],
-         situacion = case_when(V     ~ "Cubierto por Valenbisi",
-                               E & F ~ "Desierto compensado por EMT y FGV",
-                               E | F ~ "Desierto compensado por un modo",
-                               TRUE  ~ "Desierto sin compensación"))
-
-# Barrio de cada hexágono (según su centro) y los 9 barrios con más desierto
-hex$coddistbar <- st_join(st_sf(geometry = centros), df.pob["id"])$coddistbar
-desierto <- sort(table(hex$coddistbar[!hex$V]), decreasing = TRUE)
-top <- names(desierto)[1:9]
+dist_vb <- dist_min(centros, p$Valenbisi); dist_emt <- dist_min(centros, p$EMT); dist_fgv <- dist_min(centros, p$FGV)
+hex <- mutate(st_sf(geometry=rejilla), V=dist_vb<=UMBRAL["Valenbisi"], E=dist_emt<=UMBRAL["EMT"], F=dist_fgv<=UMBRAL["FGV"], situacion=case_when(V~"Cubierto por Valenbisi", E&F~"Desierto compensado por EMT y FGV", E|F~"Desierto compensado por un modo", T~"Desierto sin compensación"))
+hex$coddistbar <- st_join(st_sf(geometry=centros), df.pob["id"])$coddistbar
+desierto <- sort(table(hex$coddistbar[!hex$V]), decreasing=T); top <- names(desierto)[1:9]
 ```
 
 ```{r}
-ggplot() +
-  geom_sf(data = hex %>% group_by(situacion) %>% summarise(), aes(fill = situacion), colour = NA) +
-  geom_sf(data = df.pob, fill = NA, colour = "white") +
-  geom_sf_text(data = filter(df.pob, id %in% top), aes(label = nombre), size = 2.5) +
-  scale_fill_manual(values = c("grey75", "#ee938c", "#e34948", "#9e2324"), name = NULL) +
-  theme_void()
+ggplot() + geom_sf(data=summarise(group_by(hex, situacion)), aes(fill=situacion), col=NA) +
+  geom_sf(data=df.pob, fill=NA, col="white") + geom_sf_text(data=filter(df.pob, id%in%top), aes(label=nombre), size=2.5) +
+  scale_fill_manual(values=c("grey75","#ee938c","#e34948","#9e2324"), name=NULL) + theme_void()
 ```
 
 ```{r}
