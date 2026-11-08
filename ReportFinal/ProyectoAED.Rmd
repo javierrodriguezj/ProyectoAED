@@ -270,7 +270,7 @@ En la figura anterior se ha dibujado un perímetro alrededor de la zona de inter
 
 # P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
-La población de Valencia y la oferta de transporte público no se distribuyen de forma uniforme entre los barrios. Este análisis estudia si los barrios con mayor número de habitantes disponen también de una mayor oferta de transporte público (EMT, Metrovalencia y ValenBisi).
+La población de Valencia y la oferta de transporte público no se distribuyen de forma uniforme entre los barrios. Este análisis estudia si los barrios con mayor número de habitantes disponen también de una mayor oferta de transporte público (*EMT*, *Metrovalencia* y *Valenbisi*).
 
 Para ello, se ha generado el DataFrame *datos_transporte_barrio*, que reune la información necesaria para el análisis, combinando los datos de población con la disponibilidad de transporte público por barrio.
 
