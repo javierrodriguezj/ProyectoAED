@@ -261,3 +261,9 @@ ggplot() +
   theme_void()
 ```
 
+# Conclusion
+
+En cuanto a la primera pregunta, la oferta de transporte público guarda relación con la población: la correlación entre el número de habitantes y el número total de paradas por barrio es de 0,64. Sin embargo, la relación no es uniforme, y al normalizar por habitantes aparecen barrios con una oferta relativa muy por encima o por debajo del resto.
+
+
+Como trabajo futuro, sería interesante medir las distancias sobre la red viaria real y extender el análisis a los barrios sin ninguna estación de Valenbisi, que quedan fuera del dominio estudiado.

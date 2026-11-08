@@ -1,5 +1,5 @@
 ---
-title: Título Épico y Científico
+title: Análisis espacial de la cobertura de Valenbisi y su relación con el transporte público en Valencia
 author:
   - name: Sara Marquínez Díaz
     affil: 1
@@ -11,7 +11,7 @@ affiliation:
   - num: 1
     address: |
       Máster Universitario en Ciencia de Datos - 
-      Universitat de València.
+      Universitat de València
 correspondence: |
   marquin9@alumni.uv.es, anlalo2@alumni.uv.es, jaroji@alumni.uv.es
 # document options
@@ -26,22 +26,19 @@ abstract: |
   Este trabajo tiene un doble objetivo. En el plano técnico, se busca trabajar con 
   datos reales de fuentes abiertas del Ayuntamiento de València: descargarlos, 
   extraer la información de ficheros sin estructura tabular, limpiarlos y 
-  organizarlos en un formato *tidy*, familiarizándonos con el tratamiento de 
+  organizarlos en un formato *tidy*, familiarizándose con el tratamiento de 
   datos geográficos. 
-  En el plano práctico, se aplica estas herramientas al transporte público 
+  En el plano práctico, se aplican estas herramientas al transporte público 
   valenciano para responder a dos preguntas: si la oferta de EMT, Metrovalencia 
-  y Valenbisi se corresponde con la densidad(?) de población de cada barrio, y si 
+  y Valenbisi se corresponde con la densidad de población de cada barrio, y si 
   existen zonas sin estaciones de Valenbisi cercanas y hasta qué punto las 
   cubren los otros modos de transporte.
 # back matter
 keywords: |
   transporte público; Valenbisi; EMT; FGV; población; barrios; Valencia;
   
-authorcontributions: |
-  This work is a close collaboration between all the authors, and all of them participated in all the stages of the research.
-  
 dataavailability: |
-  All data can be publicly accessed in \url{https://opendata.vlci.valencia.es/}.
+  Todos los datos son públicos en \url{https://opendata.vlci.valencia.es/}.
 
 #sampleavailability: |
 #  Samples of the compounds ...... are available from the authors.
@@ -69,7 +66,7 @@ output:
 
 # Introducción
 
-Este proyecto consiste en el estudio de la distribución de las paradas de *Valenbisi* y su relación con el resto de transportes públicos (*EMT* y *FGV*). Para ello, hemos utilizado una base de datos proporcionada por el Ayuntamiento de Valencia, de libre acceso, con datos sobre el transporte público, los barrios y distritos de Valencia y sus habitantes.
+Este proyecto consiste en el estudio de la distribución de las paradas de Valenbisi y su relación con el resto de transportes públicos (EMT y FGV). Para ello, hemos utilizado una base de datos proporcionada por el Ayuntamiento de Valencia, de libre acceso, con datos sobre el transporte público, los barrios y distritos de Valencia y sus habitantes.
 
 Se definen a continuación algunas constantes que serán útiles a lo largo del documento.
 
@@ -90,7 +87,7 @@ knitr::opts_chunk$set(out.width = "90%")
 if (!require("pacman")) install.packages("pacman")
 
 # Carga e instala automáticamente solo las librerías faltantes
-packages <- c("sf", "readxl", "dplyr", "tidyr", "stringr", "lubridate", "ggplot2", "forcats", "patchwork", "ggrepel", "scales", "spdep", "knitr", "kableExtra", "magrittr")
+packages <- c("sf", "readxl", "dplyr", "tidyr", "stringr", "lubridate", "ggplot2", "patchwork", "ggrepel", "scales", "knitr")
 pacman::p_load(char=packages)
 invisible(lapply(packages, library, character.only = TRUE))
 ```
@@ -153,54 +150,50 @@ savedir <- '../data/'
 if (!file.exists(savedir)) dir.create(savedir)
 
 filepath <- paste0(savedir, 'valenbisi.geojson') # Valenbisi
-data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
-if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
-resumen_df(data, "Valenbisi")
+df.valenbisi <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+if (!file.exists(filepath)) st_write(df.valenbisi, filepath, delete_dsn = TRUE)
+resumen_df(df.valenbisi, "EMT")
 
 filepath <- paste0(savedir, 'emt.geojson') # EMT
-data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+df.emt <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
-resumen_df(data, "EMT")
+resumen_df(df.emt, "EMT")
 
 filepath <- paste0(savedir, 'fgv_paradas.geojson') # FGV Paradas
-data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+df.fgv_paradas <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
-resumen_df(data, "FGV")
+resumen_df(df.fgv_paradas, "FGV")
 
 filepath <- paste0(savedir, 'geom_barrios.geojson') # Geom barrios
-data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+df.geom_barrios <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
-resumen_df(data, "Barrios")
+resumen_df(df.geom_barrios, "Barrios")
 
 filepath <- paste0(savedir, 'geom_distritos.geojson') # Geom distritos
-data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+df.geom_distritos <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
-resumen_df(data, "Distritos")
+resumen_df(df.geom_distritos, "Distritos")
 
 filepath <- paste0(savedir, 'barrios.zip') # Población
 url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"
 if (!file.exists(filepath)) download.file(url_descarga, destfile = filepath, mode = "wb")
 ```
 
-Los datasets *Valenbisi*, *EMT* y *FGV* tienen muchas columnas que no son relevantes para este estudio. Son aquellas que actualizan datos de las próximas llegadas cada pocos minutos, y datos específicos de cada parada (`name`, `address`, `total`, `ticket`...). La mayoría de estas variables no serán útiles, pues el interés principal son los datos geográficos y geométricos de las paradas.
+Los datasets Valenbisi, EMT y FGV tienen muchas columnas que no son relevantes para este estudio. Son aquellas que actualizan datos de las próximas llegadas cada pocos minutos, y datos específicos de cada parada (`name`, `address`, `total`, `ticket`...). La mayoría de estas variables no serán útiles, pues el interés principal son los datos geográficos y geométricos de las paradas.
 
-Por otro lado, existen algunos `NA` en las variables `codvia` y `numportal` de *EMT*. Debido a que son identificativos de cada parada, no son relevantes para el estudio. También hay algunos `NA` en las columnas del área de *Barrios* y *Distritos*, lo cual supondrá un problema. Afortunadamente, se encuentra la geometría de todas las zonas, por lo que se podrá imputar estos valores mediante cálculo directo.
+Por otro lado, existen algunos `NA` en las variables `codvia` y `numportal` de EMT. Debido a que son identificativos de cada parada, no son relevantes para el estudio. También hay algunos `NA` en las columnas del área de *Barrios* y *Distritos*, lo cual supondrá un problema. Afortunadamente, se encuentra la geometría de todas las zonas, por lo que se podrá imputar estos valores mediante cálculo directo.
 
 Finalmente, es curioso ver que *Barrios* tiene un elemento duplicado de la variable `coddistbar`, cuando este debería ser un identificador único de cada barrio. Esto se debe a que las entradas "MAHUELLA-TAULADELLA" y "RAFALELL-VISTABELLA" son en realidad el mismo barrio, pero aparecen en filas distintas probablemente porque están separadas geográficamente. Esto se tendrá que tener en cuenta.
 
 # Conseguir un dataset *tidy*
 
-En primer lugar, se agruparán todos los datos de transporte públio en un único dataframe *tidy*.
-
 ```{r}
-# Cargamos los datos que hemos guardado previamente.
-filepath <- "../data/poblacion.gpkg"; savedir <- '../data/'
-df.valenbisi    <- st_read(paste0(savedir, 'valenbisi.geojson'), quiet = T) %>% st_transform(CRS_M)
-df.emt          <- st_read(paste0(savedir, 'emt.geojson'), quiet = T) %>% st_transform(CRS_M)
-df.fgv_paradas  <- st_read(paste0(savedir, 'fgv_paradas.geojson'), quiet = T) %>% st_transform(CRS_M)
+# Proyección a metros
+nombres <- c("df.valenbisi", "df.emt", "df.fgv_paradas", "df.geom_barrios", "df.geom_distritos")
+invisible(list2env(setNames(lapply(mget(nombres), st_transform, crs = CRS_M), nombres), envir = globalenv()))
 ```
 
-Estos dataframes tienen columnas que no vamos a necesitar para nuestro análisis, por lo que formaremos nuestro *tidy* dataset únicamente con las variables que vayan a ser útiles para el estudio (variables "decorativas" como los nombres de las paradas no resultan relevantes para este estudio). En concreto, interesan su ubicación o su *geometría*.
+Los dataframes tienen columnas que no vamos a necesitar para nuestro análisis, por lo que formaremos nuestro *tidy* dataset únicamente con las variables que vayan a ser útiles para el estudio (variables "decorativas" como los nombres de las paradas no resultan relevantes para este estudio). En concreto, interesan su ubicación o su *geometría*.
 
 ```{r}
 df.transporte <- bind_rows(
@@ -212,17 +205,11 @@ df.transporte <- bind_rows(
 head(as_tibble(df.transporte))
 ```
 
-`df.transporte` engloba la ubicación, el identificador y las líneas que pasan por cada parada de *Valenbisi*, *EMT* y *FGV*.
+`df.transporte` engloba la ubicación, el identificador y las líneas que pasan por cada parada de Valenbisi, EMT y FGV.
 
 En cuanto a la base de datos de población, se han de fusionar "MAHUELLA-TAULADELLA" y "RAFALELL-VISTABELLA" como una única fila, ya que son en realidad el mismo barrio.
 
 ```{r}
-filepath <- paste0(savedir, "geom_barrios.geojson")
-df.geom_barrios <- st_read(dsn=filepath, quiet=T) %>% st_transform(CRS_M)
-
-filepath <- paste0(savedir, "geom_distritos.geojson")
-df.geom_distritos <- st_read(dsn=filepath, quiet=T) %>% st_transform(CRS_M)
-
 df.geom_barrios <- df.geom_barrios %>%
   select(-objectid) %>%
   group_by(coddistbar, codbarrio, coddistrit) %>%
@@ -274,7 +261,9 @@ head(as_tibble(df.pob))
 
 # Exploración inicial de los datos
 
-*Valenbisi* tiene una gran densidad de paradas pero solamente en el centro de Valencia. *EMT* sí que abarca casi la totalidad de la ciudad, incluyendo la playa. Por otro lado, *FGV* es un tipo de transporte más ámplio que conecta a Valencia con incluso municipios vecinos.
+Valenbisi tiene una gran densidad de paradas pero solamente en el centro de Valencia. EMT sí que abarca casi la totalidad de la ciudad, incluyendo la playa. Por otro lado, FGV es un tipo de transporte más amplio que conecta a Valencia con incluso municipios vecinos.
+
+\<\<\<\<\<\<\< HEAD
 
 ```{r}
 
@@ -290,7 +279,9 @@ plot_mapa_transporte(
 )
 ```
 
-Debido a la limitada extensión de *Valenbisi*, se centrará el estudio en los barrios que contienen al menos uno de sus estacionamientos.
+# Debido a la limitada extensión de *Valenbisi*, se centrará el estudio en los barrios que contienen al menos uno de sus estacionamientos.
+
+Debido a la limitada extensión de Valenbisi, se centrará el estudio en los barrios que contienen al menos uno de sus estacionamientos. \>\>\>\>\>\>\> main
 
 ```{r, fig.width=8, fig.height=2.5}
 zonas_con_valenbisi <- df.transporte %>% as_tibble() %>% filter(empresa == "Valenbisi") %>% st_as_sf(sf_column_name = "geometria") %>% st_join(df.pob %>% select(id)) %>% pull(id) %>% unique() %>% sort()
@@ -301,7 +292,7 @@ caja <- st_bbox(zonas_unificadas)
 plot_mapa_transporte(df.zonas_mapa, zonas_unificadas, df.transporte, caja)
 ```
 
-A continuación, se eliminarán las zonas zombreadas del dataset ya que no contienen ninguna parada de *Valenbisi*. Por otro lado, hay un pequeño barrio en el centro urbano que no tiene paradas: el barrio "El Pilar". Crearemos otra variable con este barrio porque, al ser céntrico, sí que nos interesa para otros análisis.
+A continuación, se eliminarán las zonas sombreadas del dataset ya que no contienen ninguna parada de Valenbisi. Por otro lado, hay un pequeño barrio en el centro urbano que no tiene paradas: el barrio "El Pilar". Crearemos otra variable con este barrio porque, al ser céntrico, sí que nos interesa para otros análisis.
 
 ```{r}
 df.pob_con_bicis <- df.pob %>% filter(id %in% zonas_con_valenbisi)
@@ -310,11 +301,11 @@ df.pob <- df.pob_con_bicis %>% bind_rows(df.pob %>% filter(nombre == "EL PILAR")
 
 En la figura anterior se ha dibujado un perímetro alrededor de la zona de interés. En la Sección 7 se explicará su significado.
 
-# P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
+# Pregunta 1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
-La población de Valencia y la oferta de transporte público no se distribuyen de forma uniforme entre los barrios. Este análisis estudia si los barrios con mayor número de habitantes disponen también de una mayor oferta de transporte público (*EMT*, *Metrovalencia* y *Valenbisi*).
+La población de Valencia y la oferta de transporte público no se distribuyen de forma uniforme entre los barrios. Este análisis estudia si los barrios con mayor número de habitantes disponen también de una mayor oferta de transporte público (EMT, *Metrovalencia* y Valenbisi).
 
-Para ello, se ha generado el DataFrame *datos_transporte_barrio*, que reune la información necesaria para el análisis, combinando los datos de población con la disponibilidad de transporte público por barrio.
+Para ello, se ha generado el DataFrame `datos_transporte_barrio`, que reune la información necesaria para el análisis, combinando los datos de población con la disponibilidad de transporte público por barrio.
 
 ```{r}
 # EMT: asignar cada parada al barrio donde cae
@@ -326,35 +317,35 @@ metro_n_barrio <- st_join(df.fgv_paradas, df.pob) %>% st_drop_geometry() %>%
 valenbisi_n_barrio <- st_join(df.valenbisi, df.pob) %>% st_drop_geometry() %>% filter(!is.na(id)) %>% count(id, name = "n_valenbisi")
 
 # unimos para cada barrio
-datos_transporte_barrio <- df.pob_con_bicis %>% left_join(emt_n_barrio, by = "id") %>% left_join(metro_n_barrio, by = "id") %>% left_join(valenbisi_n_barrio, by = "id") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
-```
-
-```{r}
-b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b); d <- datos_transporte_barrio
-ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#FF69B4", high="#8B0A50")+t+labs(title="Población por barrio", fill="Habitantes") +
-  ggplot(d)+geom_sf(aes(fill=n_emt))+scale_fill_gradient(low="lightblue", high="darkblue")+t+labs(title="Paradas de EMT por barrio", fill="Nº paradas") +
-  ggplot(d)+geom_sf(aes(fill=n_metro))+scale_fill_gradient(low="red", high="darkred")+t+labs(title="Paradas de Metrovalencia por barrio", fill="Nº paradas") +
-  ggplot(d)+geom_sf(aes(fill=n_valenbisi))+scale_fill_gradient(low="lightgreen", high="darkgreen")+t+labs(title="Estaciones de Valenbisi por barrio", fill="Nº estaciones") +
-  plot_layout(ncol=2)
+datos_transporte_barrio <- df.pob %>% left_join(emt_n_barrio, by = "id") %>% left_join(metro_n_barrio, by = "id") %>% left_join(valenbisi_n_barrio, by = "id") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
 ```
 
 En primer lugar, se representa la densidad de población y la disponibilidad de cada medio de transporte por barrio, con el objetivo de visualizar la distribución espacial de la población y de las distintas redes de transporte.
 
+```{r}
+b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b,panel.grid=b); d <- datos_transporte_barrio
+ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#FF69B4", high="#8B0A50")+t+labs(title="Población por barrio", fill="Habitantes") + #scale_fill_gradient(low="#f0ebf6",high="#FF69B4")
+  ggplot(d)+geom_sf(aes(fill=n_emt))+scale_fill_gradient(low="#fce6e8", high=COL_MODO[["EMT"]])+t+labs(title="Paradas de EMT por barrio", fill="Nº paradas") +
+  ggplot(d)+geom_sf(aes(fill=n_metro))+scale_fill_gradient(low="#fef8dc", high=COL_MODO[["FGV"]] )+t+labs(title="Paradas de Metrovalencia por barrio", fill="Nº paradas") +
+  ggplot(d)+geom_sf(aes(fill=n_valenbisi))+scale_fill_gradient(low="#eaf2fb", high=COL_MODO[["Valenbisi"]],breaks = breaks_width(2) )+t+labs(title="Estaciones de Valenbisi por barrio", fill="Nº estaciones") +
+  plot_layout(ncol=2)
+```
+
 Posteriormente, se analiza la relación entre población y transporte mediante el número total de puntos de transporte y su normalización por habitantes para comparar los barrios independientemente de su tamaño poblacional.
 
 ```{r, fig.width=8, fig.height=2.5}
-d <- datos_transporte_barrio <- mutate(datos_transporte_barrio, transporte_total=n_emt+n_metro+n_valenbisi, ratio_transporte_persona=ifelse(densidad>0, transporte_total/personas, NA))
+d <- datos_transporte_barrio <- mutate(datos_transporte_barrio, transporte_total=n_emt+n_metro+n_valenbisi, ratio_transporte_persona=ifelse(densidad>0, transporte_total/personas*1000, NA))
 b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b, panel.grid=b); s <- scale_fill_gradient(low="white", high="blue")
 c <- paste("Hay una correlación del", round(cor(d$personas, d$transporte_total, use="complete.obs"), 2), "entre el número de habitantes y el número total de puntos de transporte")
-ggplot(d)+geom_sf(aes(fill=transporte_total))+s+t+labs(title="Transporte total por barrio", fill="Transporte") +
-  ggplot(d)+geom_sf(aes(fill=ratio_transporte_persona))+s+t+labs(title="Transporte respecto a la población", fill="Transporte/persona") + plot_layout(ncol=2) + plot_annotation(caption=c,theme = theme(plot.caption = element_text(size = 12)))
+ggplot(d)+geom_sf(aes(fill=transporte_total))+s+t+labs(title="Transporte total por barrio", fill="Paradas") +
+  ggplot(d)+geom_sf(aes(fill=ratio_transporte_persona))+s+t+labs(title="Transporte respecto a la población", fill="Paradas por 1000 hab.") + plot_layout(ncol=2) + plot_annotation(caption=c,theme = theme(plot.caption = element_text(size = 12)))
 ```
 
-El transporte total no se distribuye de forma homogénea entre los barrios, por lo que se analiza también la oferta relativa mediante el ratio transporte/personas. Este permite comparar la disponibilidad de transporte teniendo en cuenta la población de cada zona. La correlación entre habitantes y puntos de transporte es de 0,64, lo que indica que los barrios más poblados tienden a disponer de más transporte, aunque la relación no es igual en todos los barrios.
+El transporte total no se distribuye de forma homogénea entre los barrios, por lo que se analiza también la oferta relativa mediante el ratio transporte/personas. Este permite comparar la disponibilidad de transporte teniendo en cuenta la población de cada zona. La correlación entre habitantes y puntos de transporte es de $0.64$, lo que indica que los barrios más poblados tienden a disponer de más transporte, aunque la relación no es igual en todos los barrios.
 
-# P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
+# Pregunta 2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
 
-Dado que en el apartado anterior se ha visto que el transporte no se distribuye de manera homogénea, se quiere probar si está distribución es óptima. Donde una distribución óptima de los modos de transporte se refiere a que no existen grandes áreas sin modos de transporte, es decir, se quiere estudiar si existen *desiertos* de transporte.
+Dado que en el apartado anterior se ha visto que el transporte no se distribuye de manera homogénea, se quiere probar si existe una distribución óptima de paradas de Valenbisi. Donde una distribución óptima se refiere a que no existen grandes áreas sin modos de transporte, es decir, se quiere estudiar si existen *desiertos* de transporte y si estos están compensados por otros medios de transporte. El primer paso es fijar una distancia razonable entre paradas, es decir, el umbral de cobertura.
 
 ```{r, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
 p <- split(df.transporte, df.transporte$empresa); v <- p$Valenbisi
@@ -365,6 +356,10 @@ ggplot(d, aes(distancia_minima, fill=Transporte))+geom_density(alpha=.6)+scale_f
   ggplot(d, aes(distancia_minima, col=Transporte))+stat_ecdf(geom="step", linewidth=1)+scale_color_manual(values=COL_MODO)+geom_vline(xintercept=250, lty=2, col="grey40")+scale_y_continuous(labels=scales::percent)+coord_cartesian(xlim=c(0,1000))+labs(title="Acumulado: distancia al Valenbisi", subtitle="La línea discontinua indica el codo", x="Distancia (m)", y="Paradas acumuladas")+t+plot_layout(ncol=2)
 ```
 
+Mantenemos todas las paradas de EMT y FGV, también las de fuera del dominio, porque una parada de fuera puede dar servicio a un punto de dentro: si las quitáramos, aparecerían desiertos falsos junto al borde. Para fijar el umbral se calcula la distancia a la estación de Valenbisi más cercana. La distribución acumulada (derecha) crece rápidamente en los primeros metros y se aplana a partir de unos `r UMBRAL["Valenbisi"]` m: más allá de ese codo, aumentar la distancia apenas añade paradas. Con este umbral, el `r scales::percent(mean(e <= UMBRAL["Valenbisi"]), accuracy = 1)` de las paradas de EMT y el `r scales::percent(mean(f <= UMBRAL["Valenbisi"]), accuracy = 1)` de las de FGV tienen una estación de Valenbisi cerca. Además, `r UMBRAL["Valenbisi"]` m equivalen a unos `r round(UMBRAL["Valenbisi"] / 83)` minutos andando, una distancia asumible para ir a coger una bicicleta. Se usa el mismo umbral para los tres modos. Este valor es coherente con las recomendaciones del ITDP, que propone comprobar la cobertura de un sistema de bicicleta compartida trazando áreas de 300 a 500 m de diámetro alrededor de cada estación, es decir, radios de hasta 250 m [@Yanocha2018], y una separación media de unos 300 m entre estaciones [@itdp2013].
+
+Para localizar los desiertos se necesita un soporte espacial independiente de las paradas y de los barrios, cuyos tamaños son muy dispares. Se cubre el dominio con una rejilla de hexágonos de `r HEX_M` m entre lados opuestos y se conservan los que tienen el centro dentro del dominio. Como todos tienen la misma área, la proporción de hexágonos equivale a la proporción de superficie. Se prefieren hexágonos a cuadrados porque sus seis vecinos están a la misma distancia del centro.
+
 ```{r}
 rejilla <- st_make_grid(dominio, cellsize = HEX_M, square = FALSE)
 dentro  <- lengths(st_within(st_centroid(rejilla), dominio)) > 0
@@ -372,26 +367,35 @@ rejilla <- rejilla[dentro] # Solo hexágonos con el centro dentro del dom
 centros <- st_centroid(rejilla) # un centro por hexágono, ya filtrados
 ```
 
-Ahora calculamos las distancias entre los centros de los hexágonos y cada uno de los medios de transporte.
+Ahora se calculan las distancias entre los centros de los hexágonos y cada uno de los medios de transporte.
 
 ```{r}
 dist_vb <- dist_min(centros, p$Valenbisi); dist_emt <- dist_min(centros, p$EMT); dist_fgv <- dist_min(centros, p$FGV)
 hex <- mutate(st_sf(geometry=rejilla), V=dist_vb<=UMBRAL["Valenbisi"], E=dist_emt<=UMBRAL["EMT"], F=dist_fgv<=UMBRAL["FGV"], situacion=case_when(V~"Cubierto por Valenbisi", E&F~"Desierto compensado por EMT y FGV", E|F~"Desierto compensado por un modo", T~"Desierto sin compensación"))
 hex$id <- st_join(st_sf(geometry = centros), df.pob["id"])$id
 desierto <- sort(table(hex$id[!hex$V]), decreasing = TRUE); top <- names(head(desierto, 9))
-```
-
-```{r}
 ggplot() + geom_sf(data=summarise(group_by(hex, situacion)), aes(fill=situacion), col=NA) +
-  geom_sf(data=df.pob, fill=NA, col="white") + geom_sf_text(data=filter(df.pob, id%in%top), aes(label=nombre), size=2.5) +
-  scale_fill_manual(values=c("grey75","#ee938c","#e34948","#9e2324"), name=NULL) + theme_void()
+  geom_sf(data=df.pob, fill=NA, col="white") + geom_text_repel(data = filter(df.pob, id %in% top),aes(label = str_to_title(nombre),geometry = geometria), stat = "sf_coordinates", size = 2.5) + scale_fill_manual( values=c("grey75","#ee938c","#e34948","#9e2324"), name=NULL) + theme_void()+labs(title = "Desiertos de estacionamiento ciclista", subtitle = paste0("Hexágonos de ", HEX_M, " m; un punto está cubierto si tiene una parada a menos de ",UMBRAL["Valenbisi"], " m.\nEtiquetados: los ", length(top)," barrios con más superficie desierta."))
 ```
 
 ```{r}
-colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) # qué cubre cada modo
-hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) # ¿se complementan?
+cob <-colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) # qué se cubre
+comp<- hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) # ¿se complementan?
 
-sum(head(desierto, 9)) / sum(desierto)  # peso de los 9 primeros
+cat("Superficie cubierta:   Valenbisi", percent(cob["V"], accuracy = 0.1), " | EMT", percent(cob["E"], accuracy = 0.1), " | FGV", percent(cob["F"], accuracy = 0.1), "\n",
+"Con Valenbisi cerca:   EMT", percent(comp$EMT[comp$V], accuracy = 0.1),  " | FGV", percent(comp$FGV[comp$V], accuracy = 0.1), "\n",
+"En desiertos:          EMT", percent(comp$EMT[!comp$V], accuracy = 0.1), " | FGV", percent(comp$FGV[!comp$V], accuracy = 0.1), "\n",
+"Peso de los 9 barrios con más desierto:", percent(sum(head(desierto, 9)) / sum(desierto), accuracy = 0.1), "\n")
 ```
 
-- [ ] TO DO: Literatura. Comentar las figuras.
+Este análisis tiene algunas limitaciones. Las distancias se miden en línea recta y no a través de la red de calles, por lo que la cobertura real es algo menor. Además, solo se tiene en cuenta la ubicación de las paradas, no la frecuencia de paso ni la disponibilidad de bicicletas o anclajes. Por último, el dominio se limita a los barrios con alguna estación de Valenbisi (más El Pilar), así que no recoge los barrios periféricos sin servicio, que serían desiertos en su totalidad.
+
+# Conclusiones
+
+En el plano técnico, este trabajo ha permitido recorrer el ciclo completo de un análisis con datos abiertos reales: la descarga automatizada desde el geoportal del Ayuntamiento, la extracción de información de hojas de cálculo sin estructura tabular, la detección y corrección de inconsistencias (como el barrio duplicado de Mahuella-Tauladella y Rafalell-Vistabella) y la construcción de conjuntos de datos *tidy*. El trabajo con datos geográficos ha exigido proyectar las coordenadas a un sistema métrico (ETRS89 / UTM 30N), realizar uniones espaciales entre puntos y polígonos y construir una rejilla hexagonal que pudiera abarcar el municipio independientemente de las paradas que hubiera.
+
+En cuanto a la Pregunta 1, sí existe una relación entre la distribución de la población y la de transporte público; tienen una correlación del $0.64$. La distribución de paradas por habitantes es considerablemente homogénea a excepción de dos zonas que podríamos considerar *outliers*: "La Punta" y "La Carrasca", debido a que hay una gran cantidad de paradas pero una muy baja densidad de población.
+
+Respecto a la Pregunta 2, sí existen desiertos de estacionamiento ciclista. Con un umbral de 250 m, coherente con las recomendaciones del ITDP [@Yanocha2018], Valenbisi cubre el 61,1 % de la superficie del dominio. Los desiertos se concentran principalmente en el borde del área de servicio: los nueve barrios con más superficie desierta (entre ellos Benimàmet, Sant Pau, Malilla, La Punta y Natzaret) acumulan el 84,9 % del total. Además, los otros modos no compensan estos huecos: la EMT llega al 94,9 % de las zonas con una estación de Valenbisi cercana, pero solo al 36,3 % de los desiertos; en el caso de FGV, la cobertura cae del 29,1 % al 4,1 %. Las tres redes tienden a solaparse en el centro, enriqueciendo las zonas más transitadas de Valencia, pero no complementan los desiertos, dejando incomunicada a la periferia.
+
+Como trabajo futuro, sería interesante medir las distancias sobre la red viaria real.
