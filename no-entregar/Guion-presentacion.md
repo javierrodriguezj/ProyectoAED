@@ -30,7 +30,7 @@ Guion de Ángel:
 		1. Aquí NO mencionamos el umbal
 		2. Se han eliminado, básicamente, los distritos de Poblats del Sud y Poblats del Nord. 
 		3. Curiosamente, también hay un pequeño barrio en medio de valencia, el barrio del Pilar, que no tiene Valenbisi.
-		4. 
+		4. ...
 
 TO DO:
 - [ ] Quitar las cursivas de los nombres de las empresas
