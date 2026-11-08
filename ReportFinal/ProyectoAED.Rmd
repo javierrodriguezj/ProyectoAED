@@ -260,11 +260,11 @@ df.pob <- df.pob_con_bicis %>% bind_rows(df.pob %>% filter(nombre == "EL PILAR")
 
 En la figura anterior se ha dibujado un perímetro alrededor de la zona de interés. En la Sección 7 se explicará su significado.
 
-# P1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
+# Pregunta 1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
 La población de Valencia y la oferta de transporte público no se distribuyen de forma uniforme entre los barrios. Este análisis estudia si los barrios con mayor número de habitantes disponen también de una mayor oferta de transporte público (*EMT*, *Metrovalencia* y *Valenbisi*).
 
-Para ello, se ha generado el DataFrame *datos_transporte_barrio*, que reune la información necesaria para el análisis, combinando los datos de población con la disponibilidad de transporte público por barrio.
+Para ello, se ha generado el DataFrame `datos_transporte_barrio`, que reune la información necesaria para el análisis, combinando los datos de población con la disponibilidad de transporte público por barrio.
 
 ```{r}
 # EMT: asignar cada parada al barrio donde cae
@@ -276,7 +276,7 @@ metro_n_barrio <- st_join(df.fgv_paradas, df.pob) %>% st_drop_geometry() %>%
 valenbisi_n_barrio <- st_join(df.valenbisi, df.pob) %>% st_drop_geometry() %>% filter(!is.na(id)) %>% count(id, name = "n_valenbisi")
 
 # unimos para cada barrio
-datos_transporte_barrio <- df.pob_con_bicis %>% left_join(emt_n_barrio, by = "id") %>% left_join(metro_n_barrio, by = "id") %>% left_join(valenbisi_n_barrio, by = "id") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
+datos_transporte_barrio <- df.pob %>% left_join(emt_n_barrio, by = "id") %>% left_join(metro_n_barrio, by = "id") %>% left_join(valenbisi_n_barrio, by = "id") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
 ```
 
 ```{r}
