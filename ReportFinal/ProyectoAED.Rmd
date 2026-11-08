@@ -1,5 +1,5 @@
 ---
-title: Título Épico y Científico
+title: Análisis espacial de la cobertura de Valenbisi y su relación con el transporte público en Valencia
 author:
   - name: Sara Marquínez Díaz
     affil: 1
@@ -135,23 +135,23 @@ savedir <- '../data/'
 if (!file.exists(savedir)) dir.create(savedir)
 
 filepath <- paste0(savedir, 'valenbisi.geojson') # Valenbisi
-data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
-if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+df.valenbisi <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+if (!file.exists(filepath)) st_write(df.valenbisi, filepath, delete_dsn = TRUE)
 
 filepath <- paste0(savedir, 'emt.geojson') # EMT
-data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+df.emt <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
 
 filepath <- paste0(savedir, 'fgv_paradas.geojson') # FGV Paradas
-data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+df.fgv_paradas <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
 
 filepath <- paste0(savedir, 'geom_barrios.geojson') # Geom barrios
-data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+df.geom_barrios <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
 
 filepath <- paste0(savedir, 'geom_distritos.geojson') # Geom distritos
-data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+df.geom_distritos <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
 
 filepath <- paste0(savedir, 'barrios.zip') # Población
@@ -167,17 +167,13 @@ Finalmente, es curioso ver que *Barrios* tiene un elemento duplicado de la varia
 
 # Conseguir un dataset *tidy*
 
-En primer lugar, se agruparán todos los datos de transporte público en un único dataframe *tidy*.
-
 ```{r}
-# Cargamos los datos que hemos guardado previamente.
-filepath <- "../data/poblacion.gpkg"; savedir <- '../data/'
-df.valenbisi    <- st_read(paste0(savedir, 'valenbisi.geojson'), quiet = T) %>% st_transform(CRS_M)
-df.emt          <- st_read(paste0(savedir, 'emt.geojson'), quiet = T) %>% st_transform(CRS_M)
-df.fgv_paradas  <- st_read(paste0(savedir, 'fgv_paradas.geojson'), quiet = T) %>% st_transform(CRS_M)
+# Proyección a metros
+nombres <- c("df.valenbisi", "df.emt", "df.fgv_paradas", "df.geom_barrios", "df.geom_distritos")
+invisible(list2env(setNames(lapply(mget(nombres), st_transform, crs = CRS_M), nombres), envir = globalenv()))
 ```
 
-Estos dataframes tienen columnas que no vamos a necesitar para nuestro análisis, por lo que formaremos nuestro *tidy* dataset únicamente con las variables que vayan a ser útiles para el estudio (variables "decorativas" como los nombres de las paradas no resultan relevantes para este estudio). En concreto, interesan su ubicación o su *geometría*.
+Los dataframes tienen columnas que no vamos a necesitar para nuestro análisis, por lo que formaremos nuestro *tidy* dataset únicamente con las variables que vayan a ser útiles para el estudio (variables "decorativas" como los nombres de las paradas no resultan relevantes para este estudio). En concreto, interesan su ubicación o su *geometría*.
 
 ```{r}
 df.transporte <- bind_rows(
@@ -193,12 +189,6 @@ df.transporte <- bind_rows(
 En cuanto a la base de datos de población, se han de fusionar "MAHUELLA-TAULADELLA" y "RAFALELL-VISTABELLA" como una única fila, ya que son en realidad el mismo barrio.
 
 ```{r}
-filepath <- paste0(savedir, "geom_barrios.geojson")
-df.geom_barrios <- st_read(dsn=filepath, quiet=T) %>% st_transform(CRS_M)
-
-filepath <- paste0(savedir, "geom_distritos.geojson")
-df.geom_distritos <- st_read(dsn=filepath, quiet=T) %>% st_transform(CRS_M)
-
 df.geom_barrios <- df.geom_barrios %>%
   select(-objectid) %>%
   group_by(coddistbar, codbarrio, coddistrit) %>%
