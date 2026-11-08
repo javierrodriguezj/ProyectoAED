@@ -20,13 +20,42 @@ resumen_df <- function(df, nombre = "Dataset") {
   
   print(info, quote = FALSE, right = FALSE)
 }
-
-resumen_df(data, "Valenbisi")
-resumen_df(data, "EMT")
-resumen_df(data, "FGV")
-resumen_df(data, "Barrios")
-resumen_df(data, "Distritos")
 ```
+
+```{r}
+savedir <- '../data/'
+if (!file.exists(savedir)) dir.create(savedir)
+
+filepath <- paste0(savedir, 'valenbisi.geojson') # Valenbisi
+data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_df(data, "Valenbisi")
+
+filepath <- paste0(savedir, 'emt.geojson') # EMT
+data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_df(data, "EMT")
+
+filepath <- paste0(savedir, 'fgv_paradas.geojson') # FGV Paradas
+data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_df(data, "FGV")
+
+filepath <- paste0(savedir, 'geom_barrios.geojson') # Geom barrios
+data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_df(data, "Barrios")
+
+filepath <- paste0(savedir, 'geom_distritos.geojson') # Geom distritos
+data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
+if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_df(data, "Distritos")
+
+filepath <- paste0(savedir, 'barrios.zip') # Población
+url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"
+if (!file.exists(filepath)) download.file(url_descarga, destfile = filepath, mode = "wb")
+```
+
 
 ```{r}
 # Descomprimimos el .zip y listamos los archivos.

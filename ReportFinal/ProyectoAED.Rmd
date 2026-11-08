@@ -98,6 +98,26 @@ invisible(lapply(packages, library, character.only = TRUE))
 También se definen a continuación algunas funciones que se usarán a lo largo del documento.
 
 ```{r Funciones}
+# Para imprimir info básica sobre un dataframe
+resumen_df <- function(df, nombre = "Dataset") {
+  geo <- ""
+  if (inherits(df, "sf")) {
+    crs <- sf::st_crs(df)$input
+    geo <- sprintf(" |  %s (%s)", sf::st_geometry_type(df, FALSE), if (is.null(crs) || is.na(crs)) "Sin CRS" else crs)
+  }
+  cat(sprintf("\n %s [%d filas × %d col%s]\n", nombre, nrow(df), ncol(df), geo))
+  
+  t_map <- c(character = "chr", numeric = "dbl", integer = "int", logical = "lgl", factor = "fct", Date = "date", POSIXct = "dttm")
+  
+  info <- rbind(
+    Tipo   = sapply(df, function(x) { c <- class(x)[1]; if (c %in% names(t_map)) t_map[[c]] else sub("^sfc_", "", c) }),
+    NAs    = colSums(is.na(df)),
+    Unicos = sapply(df, function(x) length(unique(x)))
+  )
+  
+  print(info, quote = FALSE, right = FALSE)
+}
+
 dist_min <- function(origen, destino) {
   idx <- st_nearest_feature(origen, destino)
   as.numeric(st_distance(origen, destino[idx, ], by_element = TRUE))
@@ -135,22 +155,27 @@ if (!file.exists(savedir)) dir.create(savedir)
 filepath <- paste0(savedir, 'valenbisi.geojson') # Valenbisi
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/228/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_df(data, "Valenbisi")
 
 filepath <- paste0(savedir, 'emt.geojson') # EMT
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/226/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_df(data, "EMT")
 
 filepath <- paste0(savedir, 'fgv_paradas.geojson') # FGV Paradas
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/Trafico/MapServer/221/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_df(data, "FGV")
 
 filepath <- paste0(savedir, 'geom_barrios.geojson') # Geom barrios
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/224/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_df(data, "Barrios")
 
 filepath <- paste0(savedir, 'geom_distritos.geojson') # Geom distritos
 data <- st_read(dsn = if (file.exists(filepath)) filepath else 'https://geoportal.valencia.es/server/rest/services/OPENDATA/UrbanismoEInfraestructuras/MapServer/225/query?where=1=1&outFields=*&f=geojson', quiet = TRUE)
 if (!file.exists(filepath)) st_write(data, filepath, delete_dsn = TRUE)
+resumen_df(data, "Distritos")
 
 filepath <- paste0(savedir, 'barrios.zip') # Población
 url_descarga <- "https://www.valencia.es/estadistica/inf_dtba/2026/Barrios2026.zip"
@@ -184,6 +209,7 @@ df.transporte <- bind_rows(
   df.fgv_paradas %>% transmute(gid=as.integer(gid), empresa="FGV", lineas=strsplit(linea, ",")),
 ) %>% rename(geometria=geometry) %>%
   mutate(empresa=as.factor(empresa))
+head(as_tibble(df.transporte))
 ```
 
 `df.transporte` engloba la ubicación, el identificador y las líneas que pasan por cada parada de *Valenbisi*, *EMT* y *FGV*.
@@ -242,11 +268,27 @@ df.pob <- df.geom_barrios %>% mutate(
     superficie = sum(superficie, na.rm = TRUE),
     densidad   = personas/superficie
   )
+
+head(as_tibble(df.pob))
 ```
 
 # Exploración inicial de los datos
 
 *Valenbisi* tiene una gran densidad de paradas pero solamente en el centro de Valencia. *EMT* sí que abarca casi la totalidad de la ciudad, incluyendo la playa. Por otro lado, *FGV* es un tipo de transporte más ámplio que conecta a Valencia con incluso municipios vecinos.
+
+```{r}
+
+zonas_con_valenbisi <- df.transporte %>% as_tibble() %>% filter(empresa == "Valenbisi") %>% st_as_sf(sf_column_name = "geometria") %>% st_join(df.pob %>% select(id)) %>% pull(id) %>% unique() %>% sort()
+df.zonas_mapa <- df.pob %>% mutate(is_dentro = id %in% zonas_con_valenbisi)
+
+plot_mapa_transporte(
+  df_distritos = df.zonas_mapa, 
+  df_transp = df.transporte, 
+  bbox = NULL,
+  fill_zones = FALSE,
+  draw_perimeter = FALSE
+)
+```
 
 Debido a la limitada extensión de *Valenbisi*, se centrará el estudio en los barrios que contienen al menos uno de sus estacionamientos.
 
