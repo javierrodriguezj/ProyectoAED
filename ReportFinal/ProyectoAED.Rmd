@@ -312,8 +312,7 @@ El transporte total no se distribuye de forma homogénea entre los barrios, por 
 
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
 
-Dado que en el apartado anterior se ha visto que el transporte no se distribuye de manera homogénea, se quiere probar si está distribución es óptima. Donde una distribución óptima de los modos de transporte se refiere a que no existen grandes áreas sin modos de transporte, es decir,  se quiere estudiar si existen *desiertos* de transporte.
-
+Dado que en el apartado anterior se ha visto que el transporte no se distribuye de manera homogénea, se quiere probar si existe una distribución óptima de paradas de *Valenbisi*. Donde una distribución óptima se refiere a que no existen grandes áreas sin modos de transporte, es decir, se quiere estudiar si existen *desiertos* de transporte y si estos están compensados por otros medios de transporte. El primer paso es fijar una distancia razonable entre paradas, es decir, el umbral de cobertura.
 
 ```{r, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
 p <- split(df.transporte, df.transporte$empresa); v <- p$Valenbisi
@@ -324,6 +323,11 @@ ggplot(d, aes(distancia_minima, fill=Transporte))+geom_density(alpha=.6)+scale_f
   ggplot(d, aes(distancia_minima, col=Transporte))+stat_ecdf(geom="step", linewidth=1)+scale_color_manual(values=COL_MODO)+geom_vline(xintercept=250, lty=2, col="grey40")+scale_y_continuous(labels=scales::percent)+coord_cartesian(xlim=c(0,1000))+labs(title="Acumulado: distancia al Valenbisi", subtitle="La línea discontinua indica el codo", x="Distancia (m)", y="Paradas acumuladas")+t+plot_layout(ncol=2)
 ```
 
+Mantenemos todas las paradas de EMT y FGV, también las de fuera del dominio, porque una parada de fuera puede dar servicio a un punto de dentro: si las quitáramos, aparecerían desiertos falsos junto al borde. Para fijar el umbral se calcula, la distancia a la estación de *Valenbisi* más cercana. La distribución acumulada (derecha) crece rápidamente en los primeros metros y se aplana a partir de unos `r UMBRAL["Valenbisi"]` m: más allá de ese codo, aumentar la distancia apenas añade paradas. Con este umbral, el `r scales::percent(mean(e <= UMBRAL["Valenbisi"]), accuracy = 1)` de las paradas de *EMT* y el `r scales::percent(mean(f <= UMBRAL["Valenbisi"]), accuracy = 1)` de las de *FGV* tienen una estación de *Valenbisi* cerca. Además, `r UMBRAL["Valenbisi"]` m equivalen a unos `r round(UMBRAL["Valenbisi"] / 83)` minutos andando, una distancia asumible para ir a coger una bicicleta. Se usa el mismo umbral para los tres modos.
+
+
+Para localizar los desiertos se necesita un soporte espacial independiente de las paradas y de los barrios, cuyos tamaños son muy dispares. Se cubre el dominio con una rejilla de hexágonos de `r HEX_M` m de lado y se conservan los que tienen el centro dentro del dominio. Como todos tienen la misma área, la proporción de hexágonos equivale a la proporción de superficie. Se prefieren hexágonos a cuadrados porque sus seis vecinos están a la misma distancia del centro.
+
 ```{r}
 rejilla <- st_make_grid(dominio, cellsize = HEX_M, square = FALSE)
 dentro  <- lengths(st_within(st_centroid(rejilla), dominio)) > 0
@@ -331,7 +335,7 @@ rejilla <- rejilla[dentro] # Solo hexágonos con el centro dentro del dom
 centros <- st_centroid(rejilla) # un centro por hexágono, ya filtrados
 ```
 
-Ahora calculamos las distancias entre los centros de los hexágonos y cada uno de los medios de transporte.
+Ahora se calcula las distancias entre los centros de los hexágonos y cada uno de los medios de transporte.
 
 ```{r}
 dist_vb <- dist_min(centros, p$Valenbisi); dist_emt <- dist_min(centros, p$EMT); dist_fgv <- dist_min(centros, p$FGV)
@@ -343,16 +347,19 @@ desierto <- sort(table(hex$id[!hex$V]), decreasing = TRUE); top <- names(head(de
 ```{r}
 ggplot() + geom_sf(data=summarise(group_by(hex, situacion)), aes(fill=situacion), col=NA) +
   geom_sf(data=df.pob, fill=NA, col="white") + geom_sf_text(data=filter(df.pob, id%in%top), aes(label=nombre), size=2.5) +
-  scale_fill_manual(values=c("grey75","#ee938c","#e34948","#9e2324"), name=NULL) + theme_void()
+  scale_fill_manual(values=c("grey75","#ee938c","#e34948","#9e2324"), name=NULL) + theme_void()+labs(title = "Desiertos de estacionamiento ciclista",
+       subtitle = paste0("Hexágonos de ", HEX_M, " m; un punto está cubierto si tiene una parada a menos de ",
+                         UMBRAL["Valenbisi"], " m.\nEtiquetados: los ", length(top),
+                         " barrios con más superficie desierta."))
 ```
 
 ```{r}
-colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) # qué cubre cada modo
-hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) # ¿se complementan?
+cob <-colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) # qué cubre cada modo
+comp<- hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) # ¿se complementan?
 
-sum(head(desierto, 9)) / sum(desierto)  # peso de los 9 primeros
+cat("Superficie cubierta:   Valenbisi", percent(cob["V"], accuracy = 0.1), " | EMT", percent(cob["E"], accuracy = 0.1), " | FGV", percent(cob["F"], accuracy = 0.1), "\n")
+cat("Con Valenbisi cerca:   EMT", percent(comp$EMT[comp$V], accuracy = 0.1),  " | FGV", percent(comp$FGV[comp$V], accuracy = 0.1), "\n")
+cat("En desiertos:          EMT", percent(comp$EMT[!comp$V], accuracy = 0.1), " | FGV", percent(comp$FGV[!comp$V], accuracy = 0.1), "\n")
+cat("Peso de los 9 barrios con más desierto:", percent(sum(head(desierto, 9)) / sum(desierto), accuracy = 0.1), "\n")
 ```
 
-
-
-- [ ] TO DO: Literatura. Comentar las figuras.
