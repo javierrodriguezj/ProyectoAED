@@ -37,11 +37,8 @@ abstract: |
 keywords: |
   transporte público; Valenbisi; EMT; FGV; población; barrios; Valencia;
   
-authorcontributions: |
-  This work is a close collaboration between all the authors, and all of them participated in all the stages of the research.
-  
 dataavailability: |
-  All data can be publicly accessed in \url{https://opendata.vlci.valencia.es/}.
+  Todos los datos son públicos en \url{https://opendata.vlci.valencia.es/}.
 
 #sampleavailability: |
 #  Samples of the compounds ...... are available from the authors.
@@ -66,8 +63,6 @@ output:
     includes:
       in_header: preamble.tex
 ---
-
-\small
 
 # Introducción
 
@@ -353,8 +348,8 @@ Este análisis tiene algunas limitaciones. Las distancias se miden en línea rec
 
 En el plano técnico, este trabajo ha permitido recorrer el ciclo completo de un análisis con datos abiertos reales: la descarga automatizada desde el geoportal del Ayuntamiento, la extracción de información de hojas de cálculo sin estructura tabular, la detección y corrección de inconsistencias (como el barrio duplicado de Mahuella-Tauladella y Rafalell-Vistabella) y la construcción de conjuntos de datos *tidy*. El trabajo con datos geográficos ha exigido proyectar las coordenadas a un sistema métrico (ETRS89 / UTM 30N), realizar uniones espaciales entre puntos y polígonos y construir una rejilla hexagonal que pudiera abarcar el municipio independientemente de las paradas que hubiera.
 
-En cuanto a la primera pregunta, la oferta de transporte público guarda relación con la población: la correlación entre el número de habitantes y el número total de paradas por barrio es de 0,64. Sin embargo, la relación no es uniforme, y al normalizar por habitantes aparecen barrios con una oferta relativa muy por encima o por debajo del resto.
+En cuanto a la Pregunta 1, sí existe una relación entre la distribución de la población y la de transporte público; tienen una correlación del $0.64$. La distribución de paradas por habitantes es considerablemente homogénea a excepción de dos zonas que podríamos considerar *outliers*: "La Punta" y "La Carrasca", debido a que hay una gran cantidad de paradas pero una muy baja densidad de población.
 
-Respecto a la segunda pregunta, sí existen desiertos de estacionamiento ciclista. Con un umbral de 250 m, coherente con las recomendaciones del ITDP [@Yanocha2018], *Valenbisi* cubre el 61,1 % de la superficie del dominio. Los desiertos se concentran principalmente en el borde del área de servicio: los nueve barrios con más superficie desierta (entre ellos Benimàmet, Sant Pau, Malilla, La Punta y Natzaret) acumulan el 84,9 % del total. Además, los otros modos no compensan estos huecos: la *EMT* llega al 94,9 % de las zonas con una estación de *Valenbisi* cercana, pero solo al 36,3 % de los desiertos; en el caso de *FGV*, la cobertura cae del 29,1 % al 4,1 %. Las tres redes tienden a solaparse en el centro en lugar de complementarse, de modo que la periferia del dominio acumula la falta de cobertura de todos los modos.
+Respecto a la Pregunta 2, sí existen desiertos de estacionamiento ciclista. Con un umbral de 250 m, coherente con las recomendaciones del ITDP [@Yanocha2018], *Valenbisi* cubre el 61,1 % de la superficie del dominio. Los desiertos se concentran principalmente en el borde del área de servicio: los nueve barrios con más superficie desierta (entre ellos Benimàmet, Sant Pau, Malilla, La Punta y Natzaret) acumulan el 84,9 % del total. Además, los otros modos no compensan estos huecos: la *EMT* llega al 94,9 % de las zonas con una estación de *Valenbisi* cercana, pero solo al 36,3 % de los desiertos; en el caso de *FGV*, la cobertura cae del 29,1 % al 4,1 %. Las tres redes tienden a solaparse en el centro, enriqueciendo las zonas más transitadas de Valencia, pero no complementan los desiertos, dejando incomunicada a la periferia.
 
-Como trabajo futuro, sería interesante medir las distancias sobre la red viaria real, incorporar la frecuencia de paso y la disponibilidad de bicicletas y anclajes, y extender el análisis a los barrios sin ninguna estación de *Valenbisi*, que quedan fuera del dominio estudiado.
+Como trabajo futuro, sería interesante medir las distancias sobre la red viaria real.
