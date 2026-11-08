@@ -15,14 +15,24 @@ affiliation:
 correspondence: |
   marquin9@alumni.uv.es, anlalo2@alumni.uv.es, jaroji@alumni.uv.es
 # document options
-journal: notspecified
+#journal: notspecified
 type: article
-status: submit
+#status: submit
 # front matter
-simplesummary: |
-  Simple summary??
+#simplesummary: |
+#  Simple summary??
 abstract: |
-  aBSTRACT?? 
+
+  Este trabajo tiene un doble objetivo. En el plano técnico, se busca trabajar con 
+  datos reales de fuentes abiertas del Ayuntamiento de València: descargarlos, 
+  extraer la información de ficheros sin estructura tabular, limpiarlos y 
+  organizarlos en un formato *tidy*, familiarizándonos con el tratamiento de 
+  datos geográficos. 
+  En el plano práctico, se aplica estas herramientas al transporte público 
+  valenciano para responder a dos preguntas: si la oferta de EMT, Metrovalencia 
+  y Valenbisi se corresponde con la densidad(?) de población de cada barrio, y si 
+  existen zonas sin estaciones de Valenbisi cercanas y hasta qué punto las 
+  cubren los otros modos de transporte.
 # back matter
 keywords: |
   transporte público; Valenbisi; EMT; FGV; población; barrios; Valencia;
@@ -33,20 +43,20 @@ authorcontributions: |
 dataavailability: |
   All data can be publicly accessed in \url{https://opendata.vlci.valencia.es/}.
 
-sampleavailability: |
-  Samples of the compounds ...... are available from the authors.
-supplementary: |
- The following supporting information can be downloaded at:  
- \linksupplementary{s1}, Figure S1: title; Table S1: title; Video S1: title.
-abbreviations:
-  - short: MDPI
-    long: Multidisciplinary Digital Publishing Institute
-  - short: DOAJ
-    long: Directory of open access journals
-  - short: TLA
-    long: Three letter acronym
-  - short: LD 
-    long: linear dichroism
+#sampleavailability: |
+#  Samples of the compounds ...... are available from the authors.
+#supplementary: |
+# The following supporting information can be downloaded at:  
+# \linksupplementary{s1}, Figure S1: title; Table S1: title; Video S1: title.
+#abbreviations:
+#  - short: MDPI
+#    long: Multidisciplinary Digital Publishing Institute
+#  - short: DOAJ
+#    long: Directory of open access journals
+#  - short: TLA
+#    long: Three letter acronym
+#  - short: LD 
+#    long: linear dichroism
 bibliography: mybibfile.bib
 appendix: appendix.tex
 endnotes: false
@@ -302,11 +312,8 @@ El transporte total no se distribuye de forma homogénea entre los barrios, por 
 
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
 
-Preparamos las paradas de cada modo, el dominio de estudio (zonas con al menos una estación Valenbisi) y los barrios que caen dentro de él. Mantenemos todas las paradas de EMT y FGV, también las de fuera del dominio, porque una parada de fuera puede dar servicio a un punto de dentro: si las quitáramos, aparecerían desiertos falsos junto al borde.
+Dado que en el apartado anterior se ha visto que el transporte no se distribuye de manera homogénea, se quiere probar si está distribución es óptima. Donde una distribución óptima de los modos de transporte se refiere a que no existen grandes áreas sin modos de transporte, es decir,  se quiere estudiar si existen *desiertos* de transporte.
 
-Justificar el umbral de cercanía:
-
-- [ ] TO DO: Literatura (con "se" en lugar de primera persona) ya en limpio.
 
 ```{r, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
 p <- split(df.transporte, df.transporte$empresa); v <- p$Valenbisi
@@ -329,8 +336,8 @@ Ahora calculamos las distancias entre los centros de los hexágonos y cada uno d
 ```{r}
 dist_vb <- dist_min(centros, p$Valenbisi); dist_emt <- dist_min(centros, p$EMT); dist_fgv <- dist_min(centros, p$FGV)
 hex <- mutate(st_sf(geometry=rejilla), V=dist_vb<=UMBRAL["Valenbisi"], E=dist_emt<=UMBRAL["EMT"], F=dist_fgv<=UMBRAL["FGV"], situacion=case_when(V~"Cubierto por Valenbisi", E&F~"Desierto compensado por EMT y FGV", E|F~"Desierto compensado por un modo", T~"Desierto sin compensación"))
-hex$coddistbar <- st_join(st_sf(geometry=centros), df.pob["id"])$coddistbar
-desierto <- sort(table(hex$coddistbar[!hex$V]), decreasing=T); top <- names(desierto)[1:9]
+hex$id <- st_join(st_sf(geometry = centros), df.pob["id"])$id
+desierto <- sort(table(hex$id[!hex$V]), decreasing = TRUE); top <- names(head(desierto, 9))
 ```
 
 ```{r}
@@ -343,9 +350,9 @@ ggplot() + geom_sf(data=summarise(group_by(hex, situacion)), aes(fill=situacion)
 colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) # qué cubre cada modo
 hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) # ¿se complementan?
 
-sum(desierto[1:9]) / sum(desierto)  # peso de los 9 primeros
+sum(head(desierto, 9)) / sum(desierto)  # peso de los 9 primeros
 ```
 
-- [ ] TO DO: Ver por qué el último resultado sale NA.
+
 
 - [ ] TO DO: Literatura. Comentar las figuras.
