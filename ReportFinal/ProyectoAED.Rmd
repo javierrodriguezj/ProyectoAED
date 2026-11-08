@@ -92,7 +92,7 @@ knitr::opts_chunk$set(out.width = "90%")
 if (!require("pacman")) install.packages("pacman")
 
 # Carga e instala automáticamente solo las librerías faltantes
-packages <- c("sf", "readxl", "dplyr", "tidyr", "stringr", "lubridate", "ggplot2", "forcats", "patchwork", "ggrepel", "scales", "spdep", "knitr", "kableExtra", "magrittr")
+packages <- c("sf", "readxl", "dplyr", "tidyr", "stringr", "lubridate", "ggplot2", "patchwork", "ggrepel", "scales", "knitr")
 pacman::p_load(char=packages)
 invisible(lapply(packages, library, character.only = TRUE))
 ```
