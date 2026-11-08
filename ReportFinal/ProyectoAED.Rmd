@@ -277,7 +277,7 @@ Posteriormente, se analiza la relación entre población y transporte mediante e
 
 ```{r, fig.width=8, fig.height=2.5}
 d <- datos_transporte_barrio <- mutate(datos_transporte_barrio, transporte_total=n_emt+n_metro+n_valenbisi, ratio_transporte_persona=ifelse(densidad>0, transporte_total/personas*1000, NA))
-b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b, panel.grid=b); s <- scale_fill_gradient(low="white", high="blue")
+b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b, panel.grid=b); s <- scale_fill_gradient(low="white", high="purple")
 c <- paste("Hay una correlación del", round(cor(d$personas, d$transporte_total, use="complete.obs"), 2), "entre el número de habitantes y el número total de puntos de transporte")
 ggplot(d)+geom_sf(aes(fill=transporte_total))+s+t+labs(title="Transporte total por barrio", fill="Paradas") +
   ggplot(d)+geom_sf(aes(fill=ratio_transporte_persona))+s+t+labs(title="Transporte respecto a la población", fill="Paradas por 1000 hab.") + plot_layout(ncol=2) + plot_annotation(caption=c,theme = theme(plot.caption = element_text(size = 12)))
@@ -328,6 +328,7 @@ cat("Superficie cubierta:   Valenbisi", percent(cob["V"], accuracy = 0.1), " | E
 "En desiertos:          EMT", percent(comp$EMT[!comp$V], accuracy = 0.1), " | FGV", percent(comp$FGV[!comp$V], accuracy = 0.1), "\n",
 "Peso de los 9 barrios con más desierto:", percent(sum(head(desierto, 9)) / sum(desierto), accuracy = 0.1), "\n")
 ```
+
 Este análisis tiene algunas limitaciones. Las distancias se miden en línea recta y no a través de la red de calles, por lo que la cobertura real es algo menor. Además, solo se tiene en cuenta la ubicación de las paradas, no la frecuencia de paso ni la disponibilidad de bicicletas o anclajes. Por último, el dominio se limita a los barrios con alguna estación de Valenbisi (más El Pilar), así que no recoge los barrios periféricos sin servicio, que serían desiertos en su totalidad.
 
 # Conclusiones
