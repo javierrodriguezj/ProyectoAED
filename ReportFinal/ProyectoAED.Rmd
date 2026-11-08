@@ -11,7 +11,7 @@ affiliation:
   - num: 1
     address: |
       Máster Universitario en Ciencia de Datos - 
-      Universitat de València.
+      Universitat de València
 correspondence: |
   marquin9@alumni.uv.es, anlalo2@alumni.uv.es, jaroji@alumni.uv.es
 # document options
@@ -26,7 +26,7 @@ abstract: |
   Este trabajo tiene un doble objetivo. En el plano técnico, se busca trabajar con 
   datos reales de fuentes abiertas del Ayuntamiento de València: descargarlos, 
   extraer la información de ficheros sin estructura tabular, limpiarlos y 
-  organizarlos en un formato *tidy*, familiarizándonos con el tratamiento de 
+  organizarlos en un formato *tidy*, familiarizándose con el tratamiento de 
   datos geográficos. 
   En el plano práctico, se aplican estas herramientas al transporte público 
   valenciano para responder a dos preguntas: si la oferta de EMT, Metrovalencia 
@@ -66,6 +66,7 @@ output:
     includes:
       in_header: preamble.tex
 ---
+
 \small
 
 # Introducción
@@ -317,7 +318,6 @@ Dado que en el apartado anterior se ha visto que el transporte no se distribuye 
 
 Dado que en el apartado anterior se ha visto que el transporte no se distribuye de manera homogénea, se quiere probar si esta distribución es óptima. Donde una distribución óptima de los modos de transporte se refiere a que no existen grandes áreas sin modos de transporte, es decir, se quiere estudiar si existen *desiertos* de transporte.
 
-
 ```{r, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
 p <- split(df.transporte, df.transporte$empresa); v <- p$Valenbisi
 e <- dist_min(st_filter(p$EMT, dominio), v); f <- dist_min(st_filter(p$FGV, dominio), v)
@@ -359,9 +359,7 @@ cat("Superficie cubierta:   Valenbisi", percent(cob["V"], accuracy = 0.1), " | E
 "Peso de los 9 barrios con más desierto:", percent(sum(head(desierto, 9)) / sum(desierto), accuracy = 0.1), "\n")
 ```
 
-
 Este análisis tiene algunas limitaciones. Las distancias se miden en línea recta y no a través de la red de calles, por lo que la cobertura real es algo menor. Además, solo se tiene en cuenta la ubicación de las paradas, no la frecuencia de paso ni la disponibilidad de bicicletas o anclajes. Por último, el dominio se limita a los barrios con alguna estación de *Valenbisi* (más El Pilar), así que no recoge los barrios periféricos sin servicio, que serían desiertos en su totalidad.
-
 
 # Conclusiones
 
