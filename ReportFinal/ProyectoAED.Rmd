@@ -66,6 +66,7 @@ output:
     includes:
       in_header: preamble.tex
 ---
+\small
 
 # Introducción
 
@@ -289,10 +290,10 @@ datos_transporte_barrio <- df.pob_con_bicis %>% left_join(emt_n_barrio, by = "id
 
 ```{r}
 b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b); d <- datos_transporte_barrio
-ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#FF69B4", high="#8B0A50")+t+labs(title="Población por barrio", fill="Habitantes") +
-  ggplot(d)+geom_sf(aes(fill=n_emt))+scale_fill_gradient(low="lightblue", high="darkblue")+t+labs(title="Paradas de EMT por barrio", fill="Nº paradas") +
-  ggplot(d)+geom_sf(aes(fill=n_metro))+scale_fill_gradient(low="red", high="darkred")+t+labs(title="Paradas de Metrovalencia por barrio", fill="Nº paradas") +
-  ggplot(d)+geom_sf(aes(fill=n_valenbisi))+scale_fill_gradient(low="lightgreen", high="darkgreen")+t+labs(title="Estaciones de Valenbisi por barrio", fill="Nº estaciones") +
+ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#FF69B4", high="#8B0A50")+t+labs(title="Población por barrio", fill="Habitantes") + #scale_fill_gradient(low="#f0ebf6",high="#FF69B4")
+  ggplot(d)+geom_sf(aes(fill=n_emt))+scale_fill_gradient(low="#fce6e8", high=COL_MODO[["EMT"]])+t+labs(title="Paradas de EMT por barrio", fill="Nº paradas") +
+  ggplot(d)+geom_sf(aes(fill=n_metro))+scale_fill_gradient(low="#fef8dc", high=COL_MODO[["FGV"]] )+t+labs(title="Paradas de Metrovalencia por barrio", fill="Nº paradas") +
+  ggplot(d)+geom_sf(aes(fill=n_valenbisi))+scale_fill_gradient(low="#eaf2fb", high=COL_MODO[["Valenbisi"]] )+t+labs(title="Estaciones de Valenbisi por barrio", fill="Nº estaciones") +
   plot_layout(ncol=2)
 ```
 
@@ -312,11 +313,10 @@ El transporte total no se distribuye de forma homogénea entre los barrios, por 
 
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
 
-<<<<<<< HEAD
 Dado que en el apartado anterior se ha visto que el transporte no se distribuye de manera homogénea, se quiere probar si existe una distribución óptima de paradas de *Valenbisi*. Donde una distribución óptima se refiere a que no existen grandes áreas sin modos de transporte, es decir, se quiere estudiar si existen *desiertos* de transporte y si estos están compensados por otros medios de transporte. El primer paso es fijar una distancia razonable entre paradas, es decir, el umbral de cobertura.
-=======
+
 Dado que en el apartado anterior se ha visto que el transporte no se distribuye de manera homogénea, se quiere probar si está distribución es óptima. Donde una distribución óptima de los modos de transporte se refiere a que no existen grandes áreas sin modos de transporte, es decir, se quiere estudiar si existen *desiertos* de transporte.
->>>>>>> ceaffc39139d165aca78f33a1ad470b601b4bcc6
+
 
 ```{r, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
 p <- split(df.transporte, df.transporte$empresa); v <- p$Valenbisi
@@ -327,10 +327,9 @@ ggplot(d, aes(distancia_minima, fill=Transporte))+geom_density(alpha=.6)+scale_f
   ggplot(d, aes(distancia_minima, col=Transporte))+stat_ecdf(geom="step", linewidth=1)+scale_color_manual(values=COL_MODO)+geom_vline(xintercept=250, lty=2, col="grey40")+scale_y_continuous(labels=scales::percent)+coord_cartesian(xlim=c(0,1000))+labs(title="Acumulado: distancia al Valenbisi", subtitle="La línea discontinua indica el codo", x="Distancia (m)", y="Paradas acumuladas")+t+plot_layout(ncol=2)
 ```
 
-Mantenemos todas las paradas de EMT y FGV, también las de fuera del dominio, porque una parada de fuera puede dar servicio a un punto de dentro: si las quitáramos, aparecerían desiertos falsos junto al borde. Para fijar el umbral se calcula, la distancia a la estación de *Valenbisi* más cercana. La distribución acumulada (derecha) crece rápidamente en los primeros metros y se aplana a partir de unos `r UMBRAL["Valenbisi"]` m: más allá de ese codo, aumentar la distancia apenas añade paradas. Con este umbral, el `r scales::percent(mean(e <= UMBRAL["Valenbisi"]), accuracy = 1)` de las paradas de *EMT* y el `r scales::percent(mean(f <= UMBRAL["Valenbisi"]), accuracy = 1)` de las de *FGV* tienen una estación de *Valenbisi* cerca. Además, `r UMBRAL["Valenbisi"]` m equivalen a unos `r round(UMBRAL["Valenbisi"] / 83)` minutos andando, una distancia asumible para ir a coger una bicicleta. Se usa el mismo umbral para los tres modos.
+Mantenemos todas las paradas de EMT y FGV, también las de fuera del dominio, porque una parada de fuera puede dar servicio a un punto de dentro: si las quitáramos, aparecerían desiertos falsos junto al borde. Para fijar el umbral se calcula, la distancia a la estación de *Valenbisi* más cercana. La distribución acumulada (derecha) crece rápidamente en los primeros metros y se aplana a partir de unos `r UMBRAL["Valenbisi"]` m: más allá de ese codo, aumentar la distancia apenas añade paradas. Con este umbral, el `r scales::percent(mean(e <= UMBRAL["Valenbisi"]), accuracy = 1)` de las paradas de *EMT* y el `r scales::percent(mean(f <= UMBRAL["Valenbisi"]), accuracy = 1)` de las de *FGV* tienen una estación de *Valenbisi* cerca. Además, `r UMBRAL["Valenbisi"]` m equivalen a unos `r round(UMBRAL["Valenbisi"] / 83)` minutos andando, una distancia asumible para ir a coger una bicicleta. Se usa el mismo umbral para los tres modos. Este valor es coherente con las recomendaciones del ITDP, que propone comprobar la cobertura de un sistema de bicicleta compartida trazando áreas de 300 a 500 m de diámetro alrededor de cada estación, es decir, radios de hasta 250 m [@Yanocha2018], y una separación media de unos 300 m entre estaciones [@itdp2013].
 
-
-Para localizar los desiertos se necesita un soporte espacial independiente de las paradas y de los barrios, cuyos tamaños son muy dispares. Se cubre el dominio con una rejilla de hexágonos de `r HEX_M` m de lado y se conservan los que tienen el centro dentro del dominio. Como todos tienen la misma área, la proporción de hexágonos equivale a la proporción de superficie. Se prefieren hexágonos a cuadrados porque sus seis vecinos están a la misma distancia del centro.
+Para localizar los desiertos se necesita un soporte espacial independiente de las paradas y de los barrios, cuyos tamaños son muy dispares. Se cubre el dominio con una rejilla de hexágonos de `r HEX_M` m entre lados opuestos y se conservan los que tienen el centro dentro del dominio. Como todos tienen la misma área, la proporción de hexágonos equivale a la proporción de superficie. Se prefieren hexágonos a cuadrados porque sus seis vecinos están a la misma distancia del centro.
 
 ```{r}
 rejilla <- st_make_grid(dominio, cellsize = HEX_M, square = FALSE)
@@ -346,28 +345,30 @@ dist_vb <- dist_min(centros, p$Valenbisi); dist_emt <- dist_min(centros, p$EMT);
 hex <- mutate(st_sf(geometry=rejilla), V=dist_vb<=UMBRAL["Valenbisi"], E=dist_emt<=UMBRAL["EMT"], F=dist_fgv<=UMBRAL["FGV"], situacion=case_when(V~"Cubierto por Valenbisi", E&F~"Desierto compensado por EMT y FGV", E|F~"Desierto compensado por un modo", T~"Desierto sin compensación"))
 hex$id <- st_join(st_sf(geometry = centros), df.pob["id"])$id
 desierto <- sort(table(hex$id[!hex$V]), decreasing = TRUE); top <- names(head(desierto, 9))
-```
-
-```{r}
 ggplot() + geom_sf(data=summarise(group_by(hex, situacion)), aes(fill=situacion), col=NA) +
-  geom_sf(data=df.pob, fill=NA, col="white") + geom_sf_text(data=filter(df.pob, id%in%top), aes(label=nombre), size=2.5) +
-  scale_fill_manual(values=c("grey75","#ee938c","#e34948","#9e2324"), name=NULL) + theme_void()+labs(title = "Desiertos de estacionamiento ciclista",
-       subtitle = paste0("Hexágonos de ", HEX_M, " m; un punto está cubierto si tiene una parada a menos de ",
-                         UMBRAL["Valenbisi"], " m.\nEtiquetados: los ", length(top),
-                         " barrios con más superficie desierta."))
+  geom_sf(data=df.pob, fill=NA, col="white") + geom_sf_text(data=filter(df.pob, id%in%top), aes(label=nombre), size=2.5) +scale_fill_manual(values=c("grey75","#ee938c","#e34948","#9e2324"), name=NULL) + theme_void()+labs(title = "Desiertos de estacionamiento ciclista", subtitle = paste0("Hexágonos de ", HEX_M, " m; un punto está cubierto si tiene una parada a menos de ",UMBRAL["Valenbisi"], " m.\nEtiquetados: los ", length(top)," barrios con más superficie desierta."))
 ```
 
 ```{r}
-cob <-colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) # qué cubre cada modo
+cob <-colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) # qué se cubre
 comp<- hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) # ¿se complementan?
 
-cat("Superficie cubierta:   Valenbisi", percent(cob["V"], accuracy = 0.1), " | EMT", percent(cob["E"], accuracy = 0.1), " | FGV", percent(cob["F"], accuracy = 0.1), "\n")
-cat("Con Valenbisi cerca:   EMT", percent(comp$EMT[comp$V], accuracy = 0.1),  " | FGV", percent(comp$FGV[comp$V], accuracy = 0.1), "\n")
-cat("En desiertos:          EMT", percent(comp$EMT[!comp$V], accuracy = 0.1), " | FGV", percent(comp$FGV[!comp$V], accuracy = 0.1), "\n")
-cat("Peso de los 9 barrios con más desierto:", percent(sum(head(desierto, 9)) / sum(desierto), accuracy = 0.1), "\n")
+cat("Superficie cubierta:   Valenbisi", percent(cob["V"], accuracy = 0.1), " | EMT", percent(cob["E"], accuracy = 0.1), " | FGV", percent(cob["F"], accuracy = 0.1), "\n",
+"Con Valenbisi cerca:   EMT", percent(comp$EMT[comp$V], accuracy = 0.1),  " | FGV", percent(comp$FGV[comp$V], accuracy = 0.1), "\n",
+"En desiertos:          EMT", percent(comp$EMT[!comp$V], accuracy = 0.1), " | FGV", percent(comp$FGV[!comp$V], accuracy = 0.1), "\n",
+"Peso de los 9 barrios con más desierto:", percent(sum(head(desierto, 9)) / sum(desierto), accuracy = 0.1), "\n")
 ```
 
-<<<<<<< HEAD
-=======
-- [ ] TO DO: Literatura. Comentar las figuras.
->>>>>>> ceaffc39139d165aca78f33a1ad470b601b4bcc6
+
+Este análisis tiene algunas limitaciones. Las distancias se miden en línea recta y no a través de la red de calles, por lo que la cobertura real es algo menor. Además, solo se tiene en cuenta la ubicación de las paradas, no la frecuencia de paso ni la disponibilidad de bicicletas o anclajes. Por último, el dominio se limita a los barrios con alguna estación de *Valenbisi* (más El Pilar), así que no recoge los barrios periféricos sin servicio, que serían desiertos en su totalidad.
+
+
+# Conclusiones
+
+En el plano técnico, este trabajo ha permitido recorrer el ciclo completo de un análisis con datos abiertos reales: la descarga automatizada desde el geoportal del Ayuntamiento, la extracción de información de hojas de cálculo sin estructura tabular, la detección y corrección de inconsistencias (como el barrio duplicado de Mahuella-Tauladella y Rafalell-Vistabella) y la construcción de conjuntos de datos *tidy*. El trabajo con datos geográficos ha exigido proyectar las coordenadas a un sistema métrico (ETRS89 / UTM 30N), realizar uniones espaciales entre puntos y polígonos y construir una rejilla hexagonal que pudiera abarcar el municipio independientemente de las paradas que hubiera.
+
+En cuanto a la primera pregunta, la oferta de transporte público guarda relación con la población: la correlación entre el número de habitantes y el número total de paradas por barrio es de 0,64. Sin embargo, la relación no es uniforme, y al normalizar por habitantes aparecen barrios con una oferta relativa muy por encima o por debajo del resto.
+
+Respecto a la segunda pregunta, sí existen desiertos de estacionamiento ciclista. Con un umbral de 250 m, coherente con las recomendaciones del ITDP [@Yanocha2018], *Valenbisi* cubre el 61,1 % de la superficie del dominio. Los desiertos se concentran principalmente en el borde del área de servicio: los nueve barrios con más superficie desierta (entre ellos Benimàmet, Sant Pau, Malilla, La Punta y Natzaret) acumulan el 84,9 % del total. Además, los otros modos no compensan estos huecos: la *EMT* llega al 94,9 % de las zonas con una estación de *Valenbisi* cercana, pero solo al 36,3 % de los desiertos; en el caso de *FGV*, la cobertura cae del 29,1 % al 4,1 %. Las tres redes tienden a solaparse en el centro en lugar de complementarse, de modo que la periferia del dominio acumula la falta de cobertura de todos los modos.
+
+Como trabajo futuro, sería interesante medir las distancias sobre la red viaria real, incorporar la frecuencia de paso y la disponibilidad de bicicletas y anclajes, y extender el análisis a los barrios sin ninguna estación de *Valenbisi*, que quedan fuera del dominio estudiado.
