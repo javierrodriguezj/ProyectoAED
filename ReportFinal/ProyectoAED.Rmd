@@ -317,7 +317,7 @@ hex <- mutate(st_sf(geometry=rejilla), V=dist_vb<=UMBRAL["Valenbisi"], E=dist_em
 hex$id <- st_join(st_sf(geometry = centros), df.pob["id"])$id
 desierto <- sort(table(hex$id[!hex$V]), decreasing = TRUE); top <- names(head(desierto, 9))
 ggplot() + geom_sf(data=summarise(group_by(hex, situacion)), aes(fill=situacion), col=NA) +
-  geom_sf(data=df.pob, fill=NA, col="white") + geom_text_repel(data = filter(df.pob, id %in% top),aes(label = str_to_title(nombre),geometry = geometria), stat = "sf_coordinates", size = 2.5) + scale_fill_manual( values=c("grey75","#ee938c","#e34948","#9e2324"), name=NULL) + theme_void()+labs(title = "Desiertos de estacionamiento ciclista", subtitle = paste0("Hexágonos de ", HEX_M, " m; un punto está cubierto si tiene una parada a menos de ",UMBRAL["Valenbisi"], " m.\nEtiquetados: los ", length(top)," barrios con más superficie desierta."))
+  geom_sf(data=df.pob, fill=NA, col="white") + geom_text_repel(data = filter(df.pob, id %in% top),aes(label = str_to_title(nombre),geometry = geometria), stat = "sf_coordinates", size = 2.5) + scale_fill_manual( values=c("grey75","#c9b6e4","#8e5fc7","#4a1e7a"), name=NULL) + theme_void()+labs(title = "Desiertos de estacionamiento ciclista", subtitle = paste0("Hexágonos de ", HEX_M, " m; un punto está cubierto si tiene una parada a menos de ",UMBRAL["Valenbisi"], " m.\nEtiquetados: los ", length(top)," barrios con más superficie desierta."))
 ```
 
 ```{r}
