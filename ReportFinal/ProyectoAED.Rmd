@@ -279,6 +279,8 @@ valenbisi_n_barrio <- st_join(df.valenbisi, df.pob) %>% st_drop_geometry() %>% f
 datos_transporte_barrio <- df.pob %>% left_join(emt_n_barrio, by = "id") %>% left_join(metro_n_barrio, by = "id") %>% left_join(valenbisi_n_barrio, by = "id") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
 ```
 
+En primer lugar, se representa la densidad de población y la disponibilidad de cada medio de transporte por barrio, con el objetivo de visualizar la distribución espacial de la población y de las distintas redes de transporte.
+
 ```{r}
 b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b,panel.grid=b); d <- datos_transporte_barrio
 ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#FF69B4", high="#8B0A50")+t+labs(title="Población por barrio", fill="Habitantes") + #scale_fill_gradient(low="#f0ebf6",high="#FF69B4")
@@ -287,8 +289,6 @@ ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#FF69B4", hi
   ggplot(d)+geom_sf(aes(fill=n_valenbisi))+scale_fill_gradient(low="#eaf2fb", high=COL_MODO[["Valenbisi"]],breaks = breaks_width(2) )+t+labs(title="Estaciones de Valenbisi por barrio", fill="Nº estaciones") +
   plot_layout(ncol=2)
 ```
-
-En primer lugar, se representa la densidad de población y la disponibilidad de cada medio de transporte por barrio, con el objetivo de visualizar la distribución espacial de la población y de las distintas redes de transporte.
 
 Posteriormente, se analiza la relación entre población y transporte mediante el número total de puntos de transporte y su normalización por habitantes para comparar los barrios independientemente de su tamaño poblacional.
 
