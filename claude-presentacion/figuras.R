@@ -174,10 +174,10 @@ tm <- theme_minimal(base_size = BASE) + theme(axis.text=b, axis.ticks=b, legend.
                                              plot.title = element_text(face = "bold", hjust = .5, size = BASE + 1),
                                              legend.title = element_text(vjust = .85))
 d <- datos_transporte_barrio
-p3 <- ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#FF69B4", high="#8B0A50", labels = label_number(scale = 1e-3, suffix = "k"))+tm+labs(title="Población por barrio", fill="Habitantes") +
-  ggplot(d)+geom_sf(aes(fill=n_emt))+scale_fill_gradient(low="lightblue", high="darkblue")+tm+labs(title="Paradas de EMT", fill="Nº paradas") +
-  ggplot(d)+geom_sf(aes(fill=n_metro))+scale_fill_gradient(low="red", high="darkred")+tm+labs(title="Paradas de Metrovalencia", fill="Nº paradas") +
-  ggplot(d)+geom_sf(aes(fill=n_valenbisi))+scale_fill_gradient(low="lightgreen", high="darkgreen")+tm+labs(title="Estaciones de Valenbisi", fill="Nº estac.") +
+p3 <- ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#f0ebf6", high="#FF69B4")+tm+labs(title="Población por barrio", fill="Habitantes") +
+  ggplot(d)+geom_sf(aes(fill=n_emt))+scale_fill_gradient(low="#fce6e8", high=COL_MODO[["EMT"]])+tm+labs(title="Paradas de EMT", fill="Nº paradas") +
+  ggplot(d)+geom_sf(aes(fill=n_metro))+scale_fill_gradient(low="#fef8dc", high=COL_MODO[["FGV"]])+tm+labs(title="Paradas de Metrovalencia", fill="Nº paradas") +
+  ggplot(d)+geom_sf(aes(fill=n_valenbisi))+scale_fill_gradient(low="#eaf2fb", high=COL_MODO[["Valenbisi"]], breaks=breaks_width(2))+tm+labs(title="Estaciones de Valenbisi", fill="Nº estaciones") +
   plot_layout(ncol=4)
 guardar(p3, "fig3_p1_mapas.png", 16, 5.2)
 
@@ -186,9 +186,9 @@ d <- datos_transporte_barrio <- mutate(datos_transporte_barrio, transporte_total
 correlacion <- cor(d$personas, d$transporte_total, use="complete.obs")
 cat("Correlación personas-transporte:", round(correlacion, 3), "\n")
 tm2 <- tm + theme(panel.grid = b)
-s <- scale_fill_gradient(low="white", high="blue")
-p4 <- ggplot(d)+geom_sf(aes(fill=transporte_total))+s+tm2+labs(title="Transporte total por barrio", fill="Puntos") +
-  ggplot(d)+geom_sf(aes(fill=ratio_transporte_persona*1000))+s+tm2+labs(title="Transporte respecto a la población", fill="Puntos / 1000 hab.") +
+s <- scale_fill_gradient(low="white", high="purple")
+p4 <- ggplot(d)+geom_sf(aes(fill=transporte_total))+s+tm2+labs(title="Transporte total por barrio", fill="Paradas") +
+  ggplot(d)+geom_sf(aes(fill=ratio_transporte_persona*1000))+s+tm2+labs(title="Transporte respecto a la población", fill="Paradas por 1000 hab.") +
   plot_layout(ncol=2)
 guardar(p4, "fig4_p1_total_ratio.png", 11, 6.2)
 
@@ -253,8 +253,8 @@ writeLines(c(sprintf("n_hex=%d\narea_hex_ha=%.4f\ncob_V=%.4f\ncob_E=%.4f\ncob_F=
 write.csv(as.data.frame(table(hex$situacion)) %>% mutate(prop = round(Freq / sum(Freq), 4), ha = round(Freq * area_hex_ha, 1)),
           "datos/situacion_p2.csv", row.names = FALSE)
 
-COL_SIT <- c("Cubierto por Valenbisi" = "grey75", "Desierto compensado por EMT y FGV" = "#ee938c",
-             "Desierto compensado por un modo" = "#e34948", "Desierto sin compensación" = "#9e2324")
+COL_SIT <- c("Cubierto por Valenbisi" = "grey75", "Desierto compensado por EMT y FGV" = "#c9b6e4",
+             "Desierto compensado por un modo" = "#8e5fc7", "Desierto sin compensación" = "#4a1e7a")
 hex_union <- summarise(group_by(hex, situacion))
 p6 <- ggplot() + geom_sf(data=hex_union, aes(fill=situacion), col=NA) +
   geom_sf(data=df.pob, fill=NA, col="white", linewidth = .35) +
