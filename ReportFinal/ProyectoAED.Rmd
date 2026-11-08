@@ -66,7 +66,7 @@ output:
 
 # Introducción
 
-Este proyecto consiste en el estudio de la distribución de las paradas de Valenbisi y su relación con el resto de transportes públicos (EMT y FGV). Para ello, hemos utilizado una base de datos proporcionada por el Ayuntamiento de Valencia, de libre acceso, con datos sobre el transporte público, los barrios y distritos de Valencia y sus habitantes.
+Este proyecto consiste en el estudio de la distribución de las paradas de Valenbisi y su relación con el resto de transportes públicos (EMT y FGV). Para ello, se ha utilizado una base de datos proporcionada por el Ayuntamiento de Valencia, de libre acceso, con datos sobre el transporte público, los barrios y distritos de Valencia y sus habitantes.
 
 Se definen a continuación algunas constantes que serán útiles a lo largo del documento.
 
@@ -85,7 +85,6 @@ HEX_M <- 50
 knitr::opts_chunk$set(out.width = "90%")
 # Asegurar que pacman esté instalado
 if (!require("pacman")) install.packages("pacman")
-
 # Carga e instala automáticamente solo las librerías faltantes
 packages <- c("sf", "readxl", "dplyr", "tidyr", "stringr", "lubridate", "ggplot2", "patchwork", "ggrepel", "scales", "knitr")
 pacman::p_load(char=packages)
@@ -193,16 +192,20 @@ nombres <- c("df.valenbisi", "df.emt", "df.fgv_paradas", "df.geom_barrios", "df.
 invisible(list2env(setNames(lapply(mget(nombres), st_transform, crs = CRS_M), nombres), envir = globalenv()))
 ```
 
-Los dataframes tienen columnas que no vamos a necesitar para nuestro análisis, por lo que formaremos nuestro *tidy* dataset únicamente con las variables que vayan a ser útiles para el estudio (variables "decorativas" como los nombres de las paradas no resultan relevantes para este estudio). En concreto, interesan su ubicación o su *geometría*.
+Los dataframes tienen columnas que no se van a necesitar para el análisis, por lo que se va a formar un *tidy* dataset únicamente con las variables que vayan a ser útiles para el estudio (variables "decorativas" como los nombres de las paradas no resultan relevantes para este estudio). En concreto, interesan su ubicación o su *geometría*.
 
 ```{r}
 df.transporte <- bind_rows(
   df.valenbisi %>% transmute(gid=as.integer(gid), empresa="Valenbisi", lineas=as.list((number))),
   df.emt %>% transmute(gid=as.integer(gid), empresa="EMT", lineas=strsplit(lineas, ",")),
+<<<<<<< HEAD
   df.fgv_paradas %>% transmute(gid=as.integer(gid), empresa="FGV", lineas=strsplit(linea, ",")),
 ) %>% rename(geometria=geometry) %>%
   mutate(empresa=as.factor(empresa))
 head(as_tibble(df.transporte))
+=======
+  df.fgv_paradas %>% transmute(gid=as.integer(gid), empresa="FGV", lineas=strsplit(linea,",")),) %>% rename(geometria=geometry) %>% mutate(empresa=as.factor(empresa))
+>>>>>>> origin/main
 ```
 
 `df.transporte` engloba la ubicación, el identificador y las líneas que pasan por cada parada de Valenbisi, EMT y FGV.
@@ -215,13 +218,11 @@ df.geom_barrios <- df.geom_barrios %>%
   group_by(coddistbar, codbarrio, coddistrit) %>%
   summarise( # summarise une automáticamente las geometrías (st_union)
     nombre = paste(nombre, collapse = "-"),
-    gis.gis.BARRIOS.area = sum(gis.gis.BARRIOS.area, na.rm = TRUE),
-    .groups = "drop"
-  )
+    gis.gis.BARRIOS.area = sum(gis.gis.BARRIOS.area, na.rm = TRUE),.groups = "drop")
 cat(length(unique(df.geom_barrios$coddistbar)), "coddistbar únicos, y", nrow(df.geom_barrios), "filas.")
 ```
 
-El archivo `barrios.zip` contiene varios archivos `.xlsx`, que son los que realmente contienen los datos que nos interesan. Concretamente, se extraerán los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. Cabe observar que solo hay un archivo `.xlsx` correspondiente al barrio 17.5, que es la entrada duplicada mencionada anteriormente, lo cual refuerza la idea de que ambos son el mismo barrio. A continuación, se extraerá el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
+El archivo `barrios.zip` contiene varios archivos `.xlsx`, que son los que realmente contienen los datos que interesan. Concretamente, se extraerán los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. Cabe observar que solo hay un archivo `.xlsx` correspondiente al barrio 17.5, que es la entrada duplicada mencionada anteriormente, lo cual refuerza la idea de que ambos son el mismo barrio. A continuación, se extraerá el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
 
 ```{r}
 # Descomprimimos el .zip y listamos los archivos.
@@ -239,14 +240,12 @@ unidades_lista <- list(m2=1, ha=1e-4, km2=1e-6)
 unidades_factor <- as.numeric(unidades_lista[unidades])
 
 # Creamos un dataframe con toda la info de los barrios
-df.pob <- df.geom_barrios %>% mutate(
-  id = as.integer(coddistbar),
+df.pob <- df.geom_barrios %>% mutate(id = as.integer(coddistbar),
   superficie = as.numeric(st_area(geometry)) * unidades_factor
 ) %>% rename(geometria = geometry) %>% select(id, nombre, superficie, geometria) %>%
   left_join(df.info_excels %>% mutate(
       id=as.integer(paste0(coddistrit, codbar))), 
-      by="id"
-    ) %>%
+      by="id") %>%
   # Unimos los poligonos inconexos en una misma fila
   group_by(id) %>%
   summarise(
@@ -292,7 +291,7 @@ caja <- st_bbox(zonas_unificadas)
 plot_mapa_transporte(df.zonas_mapa, zonas_unificadas, df.transporte, caja)
 ```
 
-A continuación, se eliminarán las zonas sombreadas del dataset ya que no contienen ninguna parada de Valenbisi. Por otro lado, hay un pequeño barrio en el centro urbano que no tiene paradas: el barrio "El Pilar". Crearemos otra variable con este barrio porque, al ser céntrico, sí que nos interesa para otros análisis.
+A continuación, se eliminarán las zonas sombreadas del dataset ya que no contienen ninguna parada de Valenbisi. Por otro lado, hay un pequeño barrio en el centro urbano que no tiene paradas: el barrio "El Pilar". Se creará otra variable con este barrio porque, al ser céntrico, sí que nos interesa para otros análisis.
 
 ```{r}
 df.pob_con_bicis <- df.pob %>% filter(id %in% zonas_con_valenbisi)
@@ -308,12 +307,9 @@ Para ello, se ha generado el DataFrame `datos_transporte_barrio`, que reune la i
 ```{r}
 # EMT: asignar cada parada al barrio donde cae
 emt_n_barrio <- st_join(df.emt, df.pob) %>% st_drop_geometry() %>% filter(!is.na(id)) %>% count(id, name = "n_emt")
-
 metro_n_barrio <- st_join(df.fgv_paradas, df.pob) %>% st_drop_geometry() %>%
   filter(!is.na(id)) %>% count(id, name = "n_metro")
-
 valenbisi_n_barrio <- st_join(df.valenbisi, df.pob) %>% st_drop_geometry() %>% filter(!is.na(id)) %>% count(id, name = "n_valenbisi")
-
 # unimos para cada barrio
 datos_transporte_barrio <- df.pob %>% left_join(emt_n_barrio, by = "id") %>% left_join(metro_n_barrio, by = "id") %>% left_join(valenbisi_n_barrio, by = "id") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
 ```
@@ -322,7 +318,7 @@ En primer lugar, se representa la densidad de población y la disponibilidad de 
 
 ```{r}
 b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b,panel.grid=b); d <- datos_transporte_barrio
-ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#FF69B4", high="#8B0A50")+t+labs(title="Población por barrio", fill="Habitantes") + #scale_fill_gradient(low="#f0ebf6",high="#FF69B4")
+ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#f0ebf6",high="#FF69B4")+t+labs(title="Población por barrio", fill="Habitantes") +
   ggplot(d)+geom_sf(aes(fill=n_emt))+scale_fill_gradient(low="#fce6e8", high=COL_MODO[["EMT"]])+t+labs(title="Paradas de EMT por barrio", fill="Nº paradas") +
   ggplot(d)+geom_sf(aes(fill=n_metro))+scale_fill_gradient(low="#fef8dc", high=COL_MODO[["FGV"]] )+t+labs(title="Paradas de Metrovalencia por barrio", fill="Nº paradas") +
   ggplot(d)+geom_sf(aes(fill=n_valenbisi))+scale_fill_gradient(low="#eaf2fb", high=COL_MODO[["Valenbisi"]],breaks = breaks_width(2) )+t+labs(title="Estaciones de Valenbisi por barrio", fill="Nº estaciones") +
@@ -333,7 +329,7 @@ Posteriormente, se analiza la relación entre población y transporte mediante e
 
 ```{r, fig.width=8, fig.height=2.5}
 d <- datos_transporte_barrio <- mutate(datos_transporte_barrio, transporte_total=n_emt+n_metro+n_valenbisi, ratio_transporte_persona=ifelse(densidad>0, transporte_total/personas*1000, NA))
-b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b, panel.grid=b); s <- scale_fill_gradient(low="white", high="blue")
+b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b, panel.grid=b); s <- scale_fill_gradient(low="white", high="purple")
 c <- paste("Hay una correlación del", round(cor(d$personas, d$transporte_total, use="complete.obs"), 2), "entre el número de habitantes y el número total de puntos de transporte")
 ggplot(d)+geom_sf(aes(fill=transporte_total))+s+t+labs(title="Transporte total por barrio", fill="Paradas") +
   ggplot(d)+geom_sf(aes(fill=ratio_transporte_persona))+s+t+labs(title="Transporte respecto a la población", fill="Paradas por 1000 hab.") + plot_layout(ncol=2) + plot_annotation(caption=c,theme = theme(plot.caption = element_text(size = 12)))
@@ -373,13 +369,12 @@ hex <- mutate(st_sf(geometry=rejilla), V=dist_vb<=UMBRAL["Valenbisi"], E=dist_em
 hex$id <- st_join(st_sf(geometry = centros), df.pob["id"])$id
 desierto <- sort(table(hex$id[!hex$V]), decreasing = TRUE); top <- names(head(desierto, 9))
 ggplot() + geom_sf(data=summarise(group_by(hex, situacion)), aes(fill=situacion), col=NA) +
-  geom_sf(data=df.pob, fill=NA, col="white") + geom_text_repel(data = filter(df.pob, id %in% top),aes(label = str_to_title(nombre),geometry = geometria), stat = "sf_coordinates", size = 2.5) + scale_fill_manual( values=c("grey75","#ee938c","#e34948","#9e2324"), name=NULL) + theme_void()+labs(title = "Desiertos de estacionamiento ciclista", subtitle = paste0("Hexágonos de ", HEX_M, " m; un punto está cubierto si tiene una parada a menos de ",UMBRAL["Valenbisi"], " m.\nEtiquetados: los ", length(top)," barrios con más superficie desierta."))
+  geom_sf(data=df.pob, fill=NA, col="white") + geom_text_repel(data = filter(df.pob, id %in% top),aes(label = str_to_title(nombre),geometry = geometria), stat = "sf_coordinates", size = 2.5) + scale_fill_manual( values=c("grey75","#c9b6e4","#8e5fc7","#4a1e7a"), name=NULL) + theme_void()+labs(title = "Desiertos de estacionamiento ciclista", subtitle = paste0("Hexágonos de ", HEX_M, " m; un punto está cubierto si tiene una parada a menos de ",UMBRAL["Valenbisi"], " m.\nEtiquetados: los ", length(top)," barrios con más superficie desierta."))
 ```
 
 ```{r}
 cob <-colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) # qué se cubre
 comp<- hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) # ¿se complementan?
-
 cat("Superficie cubierta:   Valenbisi", percent(cob["V"], accuracy = 0.1), " | EMT", percent(cob["E"], accuracy = 0.1), " | FGV", percent(cob["F"], accuracy = 0.1), "\n",
 "Con Valenbisi cerca:   EMT", percent(comp$EMT[comp$V], accuracy = 0.1),  " | FGV", percent(comp$FGV[comp$V], accuracy = 0.1), "\n",
 "En desiertos:          EMT", percent(comp$EMT[!comp$V], accuracy = 0.1), " | FGV", percent(comp$FGV[!comp$V], accuracy = 0.1), "\n",
