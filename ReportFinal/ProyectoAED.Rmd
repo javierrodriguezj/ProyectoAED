@@ -246,7 +246,7 @@ df.pob <- df.geom_barrios %>% mutate(
 
 # Exploración inicial de los datos
 
-*Valenbisi* tiene una gran densidad de paradas pero solamente en el centro de Valencia. *EMT* sí que tiene abarca casi la totalidad de la ciudad, incluyendo la playa. Por otro lado, *FGV* es un tipo de transporte más ámplio que conecta a Valencia con incluso municipios vecinos.
+*Valenbisi* tiene una gran densidad de paradas pero solamente en el centro de Valencia. *EMT* sí que abarca casi la totalidad de la ciudad, incluyendo la playa. Por otro lado, *FGV* es un tipo de transporte más ámplio que conecta a Valencia con incluso municipios vecinos.
 
 Debido a la limitada extensión de *Valenbisi*, se centrará el estudio en los barrios que contienen al menos uno de sus estacionamientos.
 
@@ -312,8 +312,7 @@ El transporte total no se distribuye de forma homogénea entre los barrios, por 
 
 # P2. ¿Existen *desiertos* de estacionamiento ciclista? ¿Dónde se encuentran? ¿Están cubiertos por otros transportes?
 
-Dado que en el apartado anterior se ha visto que el transporte no se distribuye de manera homogénea, se quiere probar si está distribución es óptima. Donde una distribución óptima de los modos de transporte se refiere a que no existen grandes áreas sin modos de transporte, es decir,  se quiere estudiar si existen *desiertos* de transporte.
-
+Dado que en el apartado anterior se ha visto que el transporte no se distribuye de manera homogénea, se quiere probar si está distribución es óptima. Donde una distribución óptima de los modos de transporte se refiere a que no existen grandes áreas sin modos de transporte, es decir, se quiere estudiar si existen *desiertos* de transporte.
 
 ```{r, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
 p <- split(df.transporte, df.transporte$empresa); v <- p$Valenbisi
@@ -352,7 +351,5 @@ hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = me
 
 sum(head(desierto, 9)) / sum(desierto)  # peso de los 9 primeros
 ```
-
-
 
 - [ ] TO DO: Literatura. Comentar las figuras.
