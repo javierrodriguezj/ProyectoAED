@@ -266,7 +266,7 @@ En primer lugar, se representa la densidad de población y la disponibilidad de 
 
 ```{r}
 b <- element_blank(); t <- theme_minimal()+theme(axis.text=b, axis.ticks=b,panel.grid=b); d <- datos_transporte_barrio
-ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#FF69B4", high="#8B0A50")+t+labs(title="Población por barrio", fill="Habitantes") + #scale_fill_gradient(low="#f0ebf6",high="#FF69B4")
+ggplot(df.pob)+geom_sf(aes(fill=personas))+scale_fill_gradient(low="#f0ebf6",high="#FF69B4")+t+labs(title="Población por barrio", fill="Habitantes") +
   ggplot(d)+geom_sf(aes(fill=n_emt))+scale_fill_gradient(low="#fce6e8", high=COL_MODO[["EMT"]])+t+labs(title="Paradas de EMT por barrio", fill="Nº paradas") +
   ggplot(d)+geom_sf(aes(fill=n_metro))+scale_fill_gradient(low="#fef8dc", high=COL_MODO[["FGV"]] )+t+labs(title="Paradas de Metrovalencia por barrio", fill="Nº paradas") +
   ggplot(d)+geom_sf(aes(fill=n_valenbisi))+scale_fill_gradient(low="#eaf2fb", high=COL_MODO[["Valenbisi"]],breaks = breaks_width(2) )+t+labs(title="Estaciones de Valenbisi por barrio", fill="Nº estaciones") +
