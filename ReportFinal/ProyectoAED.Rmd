@@ -66,7 +66,7 @@ output:
 
 # Introducción
 
-Este proyecto consiste en el estudio de la distribución de las paradas de Valenbisi y su relación con el resto de transportes públicos (EMT y FGV). Para ello, hemos utilizado una base de datos proporcionada por el Ayuntamiento de Valencia, de libre acceso, con datos sobre el transporte público, los barrios y distritos de Valencia y sus habitantes.
+Este proyecto consiste en el estudio de la distribución de las paradas de Valenbisi y su relación con el resto de transportes públicos (EMT y FGV). Para ello, se utilizado una base de datos proporcionada por el Ayuntamiento de Valencia, de libre acceso, con datos sobre el transporte público, los barrios y distritos de Valencia y sus habitantes.
 
 Se definen a continuación algunas constantes que serán útiles a lo largo del documento.
 
@@ -168,7 +168,7 @@ nombres <- c("df.valenbisi", "df.emt", "df.fgv_paradas", "df.geom_barrios", "df.
 invisible(list2env(setNames(lapply(mget(nombres), st_transform, crs = CRS_M), nombres), envir = globalenv()))
 ```
 
-Los dataframes tienen columnas que no vamos a necesitar para nuestro análisis, por lo que formaremos nuestro *tidy* dataset únicamente con las variables que vayan a ser útiles para el estudio (variables "decorativas" como los nombres de las paradas no resultan relevantes para este estudio). En concreto, interesan su ubicación o su *geometría*.
+Los dataframes tienen columnas que no se van a necesitar para el análisis, por lo que se va a formar un *tidy* dataset únicamente con las variables que vayan a ser útiles para el estudio (variables "decorativas" como los nombres de las paradas no resultan relevantes para este estudio). En concreto, interesan su ubicación o su *geometría*.
 
 ```{r}
 df.transporte <- bind_rows(
@@ -195,7 +195,7 @@ df.geom_barrios <- df.geom_barrios %>%
 cat(length(unique(df.geom_barrios$coddistbar)), "coddistbar únicos, y", nrow(df.geom_barrios), "filas.")
 ```
 
-El archivo `barrios.zip` contiene varios archivos `.xlsx`, que son los que realmente contienen los datos que nos interesan. Concretamente, se extraerán los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. Cabe observar que solo hay un archivo `.xlsx` correspondiente al barrio 17.5, que es la entrada duplicada mencionada anteriormente, lo cual refuerza la idea de que ambos son el mismo barrio. A continuación, se extraerá el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
+El archivo `barrios.zip` contiene varios archivos `.xlsx`, que son los que realmente contienen los datos que interesan. Concretamente, se extraerán los datos de la hoja `Padron`. No obstante, el contenido no está estructurado. Hay una mezcla de texto, tablas y figuras en cada uno de los archivos que dificulta su extracción. Por otro lado, aunque los datos no estén sencillamente organizados en una tabla, siguen la misma estructura de secciones, tablas y texto en todos los archivos. Cabe observar que solo hay un archivo `.xlsx` correspondiente al barrio 17.5, que es la entrada duplicada mencionada anteriormente, lo cual refuerza la idea de que ambos son el mismo barrio. A continuación, se extraerá el contenido de todos los archivos dentro de `barrios.zip` dentro de un mismo `data.frame`.
 
 ```{r}
 # Descomprimimos el .zip y listamos los archivos.
@@ -246,7 +246,7 @@ caja <- st_bbox(zonas_unificadas)
 plot_mapa_transporte(df.zonas_mapa, zonas_unificadas, df.transporte, caja)
 ```
 
-A continuación, se eliminarán las zonas sombreadas del dataset ya que no contienen ninguna parada de Valenbisi. Por otro lado, hay un pequeño barrio en el centro urbano que no tiene paradas: el barrio "El Pilar". Crearemos otra variable con este barrio porque, al ser céntrico, sí que nos interesa para otros análisis.
+A continuación, se eliminarán las zonas sombreadas del dataset ya que no contienen ninguna parada de Valenbisi. Por otro lado, hay un pequeño barrio en el centro urbano que no tiene paradas: el barrio "El Pilar". Se creará otra variable con este barrio porque, al ser céntrico, sí que nos interesa para otros análisis.
 
 ```{r}
 df.pob_con_bicis <- df.pob %>% filter(id %in% zonas_con_valenbisi)
