@@ -1,5 +1,5 @@
-correlacion=0.644
+correlacion=0.648
 n_barrios_estudio=71
 n_barrios_total=87
-r2=0.415
-pendiente_por_10000=9.75
+r2=0.420
+pendiente_por_10000=9.85

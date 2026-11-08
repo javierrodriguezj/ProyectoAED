@@ -299,8 +299,6 @@ df.pob_con_bicis <- df.pob %>% filter(id %in% zonas_con_valenbisi)
 df.pob <- df.pob_con_bicis %>% bind_rows(df.pob %>% filter(nombre == "EL PILAR"))
 ```
 
-En la figura anterior se ha dibujado un perímetro alrededor de la zona de interés. En la Sección 7 se explicará su significado.
-
 # Pregunta 1. ¿Existe una relación entre la distribución de la población de Valencia y la disponibilidad de transporte público?
 
 La población de Valencia y la oferta de transporte público no se distribuyen de forma uniforme entre los barrios. Este análisis estudia si los barrios con mayor número de habitantes disponen también de una mayor oferta de transporte público (EMT, *Metrovalencia* y Valenbisi).

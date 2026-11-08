@@ -164,7 +164,7 @@ guardar(p_dup, "extra_barrio_duplicado.png", 6, 6.6)
 emt_n_barrio <- st_join(df.emt, df.pob) %>% st_drop_geometry() %>% filter(!is.na(id)) %>% count(id, name = "n_emt")
 metro_n_barrio <- st_join(df.fgv_paradas, df.pob) %>% st_drop_geometry() %>% filter(!is.na(id)) %>% count(id, name = "n_metro")
 valenbisi_n_barrio <- st_join(df.valenbisi, df.pob) %>% st_drop_geometry() %>% filter(!is.na(id)) %>% count(id, name = "n_valenbisi")
-datos_transporte_barrio <- df.pob_con_bicis %>% left_join(emt_n_barrio, by = "id") %>%
+datos_transporte_barrio <- df.pob %>% left_join(emt_n_barrio, by = "id") %>%
   left_join(metro_n_barrio, by = "id") %>% left_join(valenbisi_n_barrio, by = "id") %>%
   mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
 
