@@ -1,0 +1,29 @@
+---
+title: "Angel_P1"
+output: html_document
+---
+
+```{r}
+ggplot(d, aes(x=ratio_transporte_persona)) + geom_histogram()
+```
+
+```{r, fig.width=8, fig.height=4.5, message=FALSE, warning=FALSE}
+# Distribución del ratio de transporte por habitante: histograma + curva de densidad
+# (requiere `d` del Rmd principal; ggrepel y stringr ya están cargados allí)
+mediana <- median(d$ratio_transporte_persona, na.rm = TRUE)
+atipicos <- d %>% st_drop_geometry() %>% slice_max(ratio_transporte_persona, n = 2) %>%
+  mutate(etiqueta = str_to_title(nombre))
+
+ggplot(d, aes(ratio_transporte_persona)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 20, fill = "blue", col = "white", alpha = .85) +
+  geom_density(bounds = c(0, Inf), col = "#0F2C3F", linewidth = 1.3) +
+  geom_vline(xintercept = mediana, lty = 2, col = "grey40") +
+  annotate("text", x = mediana, y = Inf, label = paste0("Mediana: ", round(mediana, 1)),
+           hjust = -.1, vjust = 1.8, size = 4.6, col = "grey30") +
+  geom_point(data = atipicos, aes(y = 0), size = 3.2, shape = 21, fill = "blue", col = "#0F2C3F", stroke = 1) +
+  geom_text_repel(data = atipicos, aes(y = 0, label = etiqueta), size = 4.6, col = "#0F2C3F",
+                  nudge_y = .09, min.segment.length = 0, seed = 3) +
+  labs(title = "Distribución del transporte por habitante", x = "Paradas por 1000 habitantes", y = "Densidad") +
+  theme_minimal(base_size = 15) +
+  theme(plot.title = element_text(face = "bold"), panel.grid.minor = element_blank())
+```
