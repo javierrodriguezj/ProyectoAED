@@ -1,0 +1,6 @@
+"dataset","filas","columnas","geometria","nas","columnas_con_na","nombres"
+"Valenbisi",273,12,"POINT",0,"","gid, name, number, address, open, available, free, total, ticket, updated_at, update_jcd"
+"EMT",1155,9,"POINT",114,"codvia, numportal","gid, id_parada, codvia, numportal, suprimida, denominacion, lineas, proximas_llegadas"
+"FGV",143,8,"POINT",0,"","gid, codigo, nombre, tipo, linea, proximas_llegadas, proximes_llegadas"
+"Barrios",88,7,"POLYGON",32,"gis.gis.BARRIOS.area","objectid, codbarrio, nombre, coddistbar, coddistrit, gis.gis.BARRIOS.area"
+"Distritos",22,5,"POLYGON",15,"gis.gis.DISTRITOS.area","objectid, nombre, coddistrit, gis.gis.DISTRITOS.area"

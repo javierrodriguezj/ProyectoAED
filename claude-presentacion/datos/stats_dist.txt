@@ -1,0 +1,6 @@
+emt_n=987
+fgv_n=61
+emt_250=0.896
+fgv_250=0.951
+emt_med=134
+fgv_med=106
