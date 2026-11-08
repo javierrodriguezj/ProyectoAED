@@ -66,7 +66,7 @@ output:
 
 # Introducción
 
-Este proyecto consiste en el estudio de la distribución de las paradas de Valenbisi y su relación con el resto de transportes públicos (EMT y FGV). Para ello, se utilizado una base de datos proporcionada por el Ayuntamiento de Valencia, de libre acceso, con datos sobre el transporte público, los barrios y distritos de Valencia y sus habitantes.
+Este proyecto consiste en el estudio de la distribución de las paradas de Valenbisi y su relación con el resto de transportes públicos (EMT y FGV). Para ello, se ha utilizado una base de datos proporcionada por el Ayuntamiento de Valencia, de libre acceso, con datos sobre el transporte público, los barrios y distritos de Valencia y sus habitantes.
 
 Se definen a continuación algunas constantes que serán útiles a lo largo del documento.
 
@@ -85,7 +85,6 @@ HEX_M <- 50
 knitr::opts_chunk$set(out.width = "90%")
 # Asegurar que pacman esté instalado
 if (!require("pacman")) install.packages("pacman")
-
 # Carga e instala automáticamente solo las librerías faltantes
 packages <- c("sf", "readxl", "dplyr", "tidyr", "stringr", "lubridate", "ggplot2", "patchwork", "ggrepel", "scales", "knitr")
 pacman::p_load(char=packages)
@@ -174,9 +173,7 @@ Los dataframes tienen columnas que no se van a necesitar para el análisis, por 
 df.transporte <- bind_rows(
   df.valenbisi %>% transmute(gid=as.integer(gid), empresa="Valenbisi", lineas=as.list((number))),
   df.emt %>% transmute(gid=as.integer(gid), empresa="EMT", lineas=strsplit(lineas, ",")),
-  df.fgv_paradas %>% transmute(gid=as.integer(gid), empresa="FGV", lineas=strsplit(linea, ",")),
-) %>% rename(geometria=geometry) %>%
-  mutate(empresa=as.factor(empresa))
+  df.fgv_paradas %>% transmute(gid=as.integer(gid), empresa="FGV", lineas=strsplit(linea,",")),) %>% rename(geometria=geometry) %>% mutate(empresa=as.factor(empresa))
 ```
 
 `df.transporte` engloba la ubicación, el identificador y las líneas que pasan por cada parada de Valenbisi, EMT y FGV.
@@ -189,9 +186,7 @@ df.geom_barrios <- df.geom_barrios %>%
   group_by(coddistbar, codbarrio, coddistrit) %>%
   summarise( # summarise une automáticamente las geometrías (st_union)
     nombre = paste(nombre, collapse = "-"),
-    gis.gis.BARRIOS.area = sum(gis.gis.BARRIOS.area, na.rm = TRUE),
-    .groups = "drop"
-  )
+    gis.gis.BARRIOS.area = sum(gis.gis.BARRIOS.area, na.rm = TRUE),.groups = "drop")
 cat(length(unique(df.geom_barrios$coddistbar)), "coddistbar únicos, y", nrow(df.geom_barrios), "filas.")
 ```
 
@@ -213,14 +208,12 @@ unidades_lista <- list(m2=1, ha=1e-4, km2=1e-6)
 unidades_factor <- as.numeric(unidades_lista[unidades])
 
 # Creamos un dataframe con toda la info de los barrios
-df.pob <- df.geom_barrios %>% mutate(
-  id = as.integer(coddistbar),
+df.pob <- df.geom_barrios %>% mutate(id = as.integer(coddistbar),
   superficie = as.numeric(st_area(geometry)) * unidades_factor
 ) %>% rename(geometria = geometry) %>% select(id, nombre, superficie, geometria) %>%
   left_join(df.info_excels %>% mutate(
       id=as.integer(paste0(coddistrit, codbar))), 
-      by="id"
-    ) %>%
+      by="id") %>%
   # Unimos los poligonos inconexos en una misma fila
   group_by(id) %>%
   summarise(
@@ -262,12 +255,9 @@ Para ello, se ha generado el DataFrame `datos_transporte_barrio`, que reune la i
 ```{r}
 # EMT: asignar cada parada al barrio donde cae
 emt_n_barrio <- st_join(df.emt, df.pob) %>% st_drop_geometry() %>% filter(!is.na(id)) %>% count(id, name = "n_emt")
-
 metro_n_barrio <- st_join(df.fgv_paradas, df.pob) %>% st_drop_geometry() %>%
   filter(!is.na(id)) %>% count(id, name = "n_metro")
-
 valenbisi_n_barrio <- st_join(df.valenbisi, df.pob) %>% st_drop_geometry() %>% filter(!is.na(id)) %>% count(id, name = "n_valenbisi")
-
 # unimos para cada barrio
 datos_transporte_barrio <- df.pob %>% left_join(emt_n_barrio, by = "id") %>% left_join(metro_n_barrio, by = "id") %>% left_join(valenbisi_n_barrio, by = "id") %>% mutate(across(c(n_emt, n_metro, n_valenbisi), ~coalesce(.x,0)))
 ```
@@ -333,13 +323,11 @@ ggplot() + geom_sf(data=summarise(group_by(hex, situacion)), aes(fill=situacion)
 ```{r}
 cob <-colMeans(st_drop_geometry(hex)[, c("V", "E", "F")]) # qué se cubre
 comp<- hex %>% st_drop_geometry() %>% group_by(V) %>% summarise(EMT = mean(E), FGV = mean(F)) # ¿se complementan?
-
 cat("Superficie cubierta:   Valenbisi", percent(cob["V"], accuracy = 0.1), " | EMT", percent(cob["E"], accuracy = 0.1), " | FGV", percent(cob["F"], accuracy = 0.1), "\n",
 "Con Valenbisi cerca:   EMT", percent(comp$EMT[comp$V], accuracy = 0.1),  " | FGV", percent(comp$FGV[comp$V], accuracy = 0.1), "\n",
 "En desiertos:          EMT", percent(comp$EMT[!comp$V], accuracy = 0.1), " | FGV", percent(comp$FGV[!comp$V], accuracy = 0.1), "\n",
 "Peso de los 9 barrios con más desierto:", percent(sum(head(desierto, 9)) / sum(desierto), accuracy = 0.1), "\n")
 ```
-
 Este análisis tiene algunas limitaciones. Las distancias se miden en línea recta y no a través de la red de calles, por lo que la cobertura real es algo menor. Además, solo se tiene en cuenta la ubicación de las paradas, no la frecuencia de paso ni la disponibilidad de bicicletas o anclajes. Por último, el dominio se limita a los barrios con alguna estación de Valenbisi (más El Pilar), así que no recoge los barrios periféricos sin servicio, que serían desiertos en su totalidad.
 
 # Conclusiones
